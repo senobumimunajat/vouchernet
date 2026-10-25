@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: voucher_net_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+      - ./database:/var/www/html/database
+    environment:
+      - APP_NAME="VoucherNet RT RW"
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8000
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/database/database.sqlite
+      - SESSION_DRIVER=file
+      - QUEUE_CONNECTION=sync

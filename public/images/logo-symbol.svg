@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title-vouchernet-symbol">
+  <title id="title-vouchernet-symbol">VoucherNet Symbol</title>
+  <!-- Left Leg: Solid Anchor Pillar (Voucher Foundation) -->
+  <rect x="66" y="44" width="34" height="168" rx="17" fill="#2563EB" transform="rotate(-15 83 128)"/>
+  
+  <!-- Right Leg: 3 Progressive WiFi Signal Bars (Connectivity / Net) -->
+  <!-- Low Bar: Hotspot Entry Dot -->
+  <circle cx="138" cy="188" r="15" fill="#2563EB"/>
+  
+  <!-- Mid Bar: Medium Signal Transmission -->
+  <rect x="146" y="112" width="28" height="54" rx="14" fill="#2563EB" transform="rotate(15 160 139)"/>
+  
+  <!-- High Bar: Full Connectivity Peak -->
+  <rect x="172" y="46" width="28" height="96" rx="14" fill="#2563EB" transform="rotate(15 186 94)"/>
+</svg>
