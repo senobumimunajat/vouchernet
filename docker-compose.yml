@@ -11,6 +11,7 @@ services:
       - ./:/var/www/html
       - ./storage:/var/www/html/storage
       - ./database:/var/www/html/database
+      - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
     environment:
       - APP_NAME="VoucherNet RT RW"
       - APP_ENV=${APP_ENV:-production}
