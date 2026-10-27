@@ -27,10 +27,12 @@ fi
 
 chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 
+git config --global --add safe.directory /var/www/html || true
+
 # Install composer dependencies if vendor doesn't exist
 if [ ! -d /var/www/html/vendor ]; then
     echo "Installing Composer dependencies..."
-    composer install --no-interaction --prefer-dist --optimize-autoloader --no-audit
+    composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
 
 # Generate application key if empty
