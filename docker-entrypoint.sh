@@ -39,10 +39,18 @@ if ! grep -q "APP_KEY=base64:" /var/www/html/.env; then
     php artisan key:generate --force
 fi
 
-# Run database migrations and seeder
-echo "Running Migrations and Seeders..."
+# Run database migrations
+echo "Running Migrations..."
 php artisan migrate --force
-php artisan db:seed --force
+
+# Run seeder only if users table is empty (prevent resetting changed passwords on restart)
+USER_COUNT=$(php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap(); echo \App\Models\User::count();" 2>/dev/null || echo "0")
+if [ "$USER_COUNT" = "0" ]; then
+    echo "First time database setup detected, running initial seeders..."
+    php artisan db:seed --force
+else
+    echo "Database already contains users (${USER_COUNT} users), skipping seeders to preserve custom passwords and data."
+fi
 
 # Create public storage link
 php artisan storage:link || true
