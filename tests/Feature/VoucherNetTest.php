@@ -749,13 +749,15 @@ class VoucherNetTest extends TestCase
             'phone' => '081299998888',
         ]);
 
-        // Verifikasi ketika admin yang telah diupdate membuka/klik faktur, nama kasir muncul sesuai admin yang klik
+        // Verifikasi ketika admin yang telah diupdate dikaitkan dengan transaksi, nama kasir muncul sesuai nama baru
         $admin->refresh();
-        $sampleOrder = Order::first();
+        $sampleOrder = Order::where('confirmed_by', $admin->id)->first();
         if (! $sampleOrder) {
             $sampleOrder = Order::create([
-                'order_number' => 'ORD-SAMPLE-RECEIPT',
-                'tenant_id' => $tenant->id,
+                'order_number' => 'ORD-SAMPLE-RECEIPT-' . uniqid(),
+                'tenant_id' => User::where('role', 'tenant')->first()->id,
+                'created_by' => $admin->id,
+                'confirmed_by' => $admin->id,
                 'package_id' => VoucherPackage::first()->id,
                 'quantity' => 10,
                 'printed_price_each' => 3000,
@@ -1370,6 +1372,28 @@ class VoucherNetTest extends TestCase
         // Viewed by Tenant: Signatory MUST STILL be Admin
         $respTenant = $this->actingAs($tenant)->get(route('orders.invoice', $order));
         $respTenant->assertSee($admin->name);
+
+        // 2. Tenant creates an online order independently
+        $this->actingAs($tenant)->post(route('tenant.orders.store'), [
+            'items' => [$pkg->id => 10],
+        ]);
+        $onlineOrder = Order::latest('id')->first();
+        $this->assertEquals($tenant->id, $onlineOrder->created_by);
+
+        // Before payment confirmation: Invoice shows dotted line for manual verification
+        $respOnlineFaktur = $this->actingAs($superAdmin)->get(route('orders.invoice', $onlineOrder));
+        $respOnlineFaktur->assertSee('................................');
+
+        // After Admin confirms payment: Receipt locks to Admin who confirmed
+        $this->actingAs($admin)->post(route('admin.orders.confirm', $onlineOrder), [
+            'payment_method' => 'cash',
+        ]);
+        $onlineOrder->refresh();
+        $this->assertEquals('lunas', $onlineOrder->status);
+        $this->assertEquals($admin->id, $onlineOrder->confirmed_by);
+
+        $respOnlineKwitansi = $this->actingAs($superAdmin)->get(route('orders.invoice', $onlineOrder));
+        $respOnlineKwitansi->assertSee($admin->name);
     }
 }
 

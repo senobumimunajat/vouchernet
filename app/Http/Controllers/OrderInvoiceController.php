@@ -35,21 +35,30 @@ class OrderInvoiceController extends Controller
 
         // Nama kasir / petugas penandatangan faktur & kwitansi:
         // Permanen mengikuti siapa petugas/kasir yang memproses transaksi asli:
-        // - Jika LUNAS: nama petugas yang mengonfirmasi/menerima pembayaran (confirmedByUser), atau pembuat transaksi (creator)
-        // - Jika TEMPO (Belum Lunas): nama petugas yang membuat dan mengeluarkan faktur (creator)
-        // - Nama TIDAK PERNAH berubah mengikuti siapa yang sedang membuka atau mencetak dokumen saat ini.
+        // 1. Jika LUNAS: nama petugas yang mengonfirmasi/menerima pembayaran (confirmedByUser), atau pembuat transaksi (creator)
+        // 2. Jika TEMPO / BELUM LUNAS (Faktur Tagihan):
+        //    - Jika dibuat oleh kasir/admin di loket (offline/walk-in): nama admin kasir pembuat (creator)
+        //    - Jika dipesan mandiri secara online oleh Mitra Warung: garis titik-titik ( .................... ) untuk tanda tangan basah saat serah terima
+        // 3. Nama TIDAK PERNAH berubah mengikuti siapa yang sedang membuka atau mencetak dokumen saat ini.
         $cashierName = null;
-        if ($isLunas && $order->confirmedByUser) {
-            $cashierName = $order->confirmedByUser->name;
-        } elseif ($order->creator && ($order->creator->isAdmin() || $order->creator->isSuperAdmin())) {
-            $cashierName = $order->creator->name;
-        } elseif ($order->confirmedByUser) {
-            $cashierName = $order->confirmedByUser->name;
+        if ($isLunas) {
+            if ($order->confirmedByUser) {
+                $cashierName = $order->confirmedByUser->name;
+            } elseif ($order->creator && ($order->creator->isAdmin() || $order->creator->isSuperAdmin())) {
+                $cashierName = $order->creator->name;
+            } else {
+                $cashierName = ($user->isAdmin() || $user->isSuperAdmin())
+                    ? $user->name
+                    : (\App\Models\User::whereIn('role', ['admin', 'super_admin'])->value('name') ?? 'Admin Kasir');
+            }
         } else {
-            // Fallback untuk riwayat lama jika creator/confirmed_by kosong
-            $cashierName = ($user->isAdmin() || $user->isSuperAdmin())
-                ? $user->name
-                : (\App\Models\User::whereIn('role', ['admin', 'super_admin'])->value('name') ?? 'Admin Kasir');
+            // Belum Lunas (Faktur Tagihan)
+            if ($order->creator && ($order->creator->isAdmin() || $order->creator->isSuperAdmin())) {
+                $cashierName = $order->creator->name;
+            } else {
+                // Dipesan online mandiri oleh mitra warung: sediakan garis titik-titik untuk verifikasi tanda tangan fisik saat serah terima
+                $cashierName = '................................';
+            }
         }
 
         $packageSummary = $order->package_names_summary;
