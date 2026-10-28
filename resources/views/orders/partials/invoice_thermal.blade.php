@@ -138,7 +138,7 @@
             <div class="text-slate-500">Kasir/Petugas</div>
             <div class="h-7"></div>
             <div class="border-t border-dotted border-slate-400 pt-0.5 font-bold truncate">
-                {{ $cashierName }}
+                {{ !empty($cashierSigner) ? $cashierSigner : '( .................... )' }}
             </div>
         </div>
     </div>

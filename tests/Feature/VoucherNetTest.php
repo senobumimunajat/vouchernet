@@ -1382,7 +1382,7 @@ class VoucherNetTest extends TestCase
 
         // Before payment confirmation: Invoice shows dotted line for manual verification
         $respOnlineFaktur = $this->actingAs($superAdmin)->get(route('orders.invoice', $onlineOrder));
-        $respOnlineFaktur->assertSee('................................');
+        $respOnlineFaktur->assertSee('( .................................... )');
 
         // After Admin confirms payment: Receipt locks to Admin who confirmed
         $this->actingAs($admin)->post(route('admin.orders.confirm', $onlineOrder), [

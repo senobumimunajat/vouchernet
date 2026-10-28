@@ -37,27 +37,29 @@ class OrderInvoiceController extends Controller
         // Permanen mengikuti siapa petugas/kasir yang memproses transaksi asli:
         // 1. Jika LUNAS: nama petugas yang mengonfirmasi/menerima pembayaran (confirmedByUser), atau pembuat transaksi (creator)
         // 2. Jika TEMPO / BELUM LUNAS (Faktur Tagihan):
-        //    - Jika dibuat oleh kasir/admin di loket (offline/walk-in): nama admin kasir pembuat (creator)
-        //    - Jika dipesan mandiri secara online oleh Mitra Warung: garis titik-titik ( .................... ) untuk tanda tangan basah saat serah terima
+        //    - Dibuat oleh kasir/admin di loket (offline/walk-in): nama admin kasir pembuat (creator)
+        //    - Dipesan online mandiri oleh mitra: belum ada petugas fisik (kosong / null)
         // 3. Nama TIDAK PERNAH berubah mengikuti siapa yang sedang membuka atau mencetak dokumen saat ini.
-        $cashierName = null;
+        $cashierSigner = null;
         if ($isLunas) {
             if ($order->confirmedByUser) {
-                $cashierName = $order->confirmedByUser->name;
+                $cashierSigner = $order->confirmedByUser->name;
             } elseif ($order->creator && ($order->creator->isAdmin() || $order->creator->isSuperAdmin())) {
-                $cashierName = $order->creator->name;
+                $cashierSigner = $order->creator->name;
             } else {
-                $cashierName = ($user->isAdmin() || $user->isSuperAdmin())
+                $cashierSigner = ($user->isAdmin() || $user->isSuperAdmin())
                     ? $user->name
                     : (\App\Models\User::whereIn('role', ['admin', 'super_admin'])->value('name') ?? 'Admin Kasir');
             }
+            $cashierName = $cashierSigner;
         } else {
             // Belum Lunas (Faktur Tagihan)
             if ($order->creator && ($order->creator->isAdmin() || $order->creator->isSuperAdmin())) {
+                $cashierSigner = $order->creator->name;
                 $cashierName = $order->creator->name;
             } else {
-                // Dipesan online mandiri oleh mitra warung: sediakan garis titik-titik untuk verifikasi tanda tangan fisik saat serah terima
-                $cashierName = '................................';
+                $cashierSigner = null;
+                $cashierName = 'Pesanan Online';
             }
         }
 
@@ -115,6 +117,7 @@ class OrderInvoiceController extends Controller
             'terbilang',
             'isLunas',
             'cashierName',
+            'cashierSigner',
             'waShareText',
             'waShareUrl'
         ));

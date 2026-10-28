@@ -106,7 +106,7 @@
             </div>
             <div class="flex justify-between items-center py-0.2">
                 <span class="text-slate-500">Petugas:</span>
-                <span class="font-semibold text-slate-800 truncate max-w-[130px]">{{ $cashierName }}</span>
+                <span class="font-semibold {{ !empty($cashierSigner) ? 'text-slate-800' : 'text-slate-500 italic' }} truncate max-w-[130px]">{{ $cashierName }}</span>
             </div>
             @endif
         </div>
@@ -243,18 +243,22 @@
             @endif
         </div>
 
-        <!-- 2-Box Tanda Tangan -->
-        <div class="flex items-center gap-7 sm:gap-10 text-center text-[10px]">
-            <div>
-                <p class="text-slate-400 font-medium text-[9px] mb-6 sm:mb-7">Penerima (Mitra)</p>
-                <div class="border-t border-slate-300 pt-0.5 font-bold text-slate-800 text-[10px] truncate max-w-[120px]">
+        <!-- 2-Box Tanda Tangan Formal & Rapi -->
+        <div class="flex items-end gap-6 sm:gap-8 text-center text-[10px] ml-auto">
+            <div class="w-36 sm:w-44 flex flex-col items-center">
+                <p class="text-slate-400 font-medium text-[9px] mb-8 sm:mb-9">Penerima (Mitra)</p>
+                <div class="w-full border-t border-slate-300 pt-1 font-bold text-slate-800 text-[10px] leading-tight text-center">
                     ( {{ $order->customer_display_name }} )
                 </div>
             </div>
-            <div>
-                <p class="text-slate-400 font-medium text-[9px] mb-6 sm:mb-7">Kasir / Pengelola</p>
-                <div class="border-t border-slate-300 pt-0.5 font-bold text-slate-800 text-[10px] truncate max-w-[120px]">
-                    ( {{ $cashierName }} )
+            <div class="w-36 sm:w-44 flex flex-col items-center">
+                <p class="text-slate-400 font-medium text-[9px] mb-8 sm:mb-9">Kasir / Pengelola</p>
+                <div class="w-full border-t border-slate-300 pt-1 font-bold text-slate-800 text-[10px] leading-tight text-center">
+                    @if(!empty($cashierSigner))
+                        ( {{ $cashierSigner }} )
+                    @else
+                        ( .................................... )
+                    @endif
                 </div>
             </div>
         </div>
