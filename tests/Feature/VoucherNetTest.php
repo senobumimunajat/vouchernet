@@ -19,7 +19,7 @@ class VoucherNetTest extends TestCase
     {
         $response = $this->get('/login');
         $response->assertStatus(200);
-        $response->assertSee('VoucherNet');
+        $response->assertSee(Setting::get('app_name', 'VoucherNet'));
     }
 
     public function test_super_admin_redirected_to_finance_dashboard(): void
@@ -1315,29 +1315,18 @@ class VoucherNetTest extends TestCase
 
         $response->assertSessionHas('success');
         $this->assertNull(Setting::get('app_logo_path'));
+        Setting::set('app_name', 'VoucherNet');
     }
 
-    public function test_super_admin_can_set_custom_owner_name_and_title_in_print_report(): void
+    public function test_financial_report_shows_owner_from_super_admin_account_and_custom_app_name(): void
     {
         $superAdmin = User::where('role', 'super_admin')->first();
+        $originalName = $superAdmin->name;
+        $originalAppName = Setting::get('app_name', 'VoucherNet RT/RW');
 
-        $response = $this->actingAs($superAdmin)->post(route('settings.update'), [
-            'app_name' => 'Berkah WiFi Net',
-            'app_subtitle' => 'Internet Komunitas',
-            'owner_name' => 'Seno Bumi Munajat',
-            'owner_title' => 'Owner / Pengelola',
-            'finance_officer_name' => 'Ahmad Bendahara',
-            'admin_whatsapp_number' => '6281234567890',
-            'bank_accounts' => 'BCA: 123456',
-        ]);
+        $superAdmin->update(['name' => 'Seno Bumi Munajat']);
+        Setting::set('app_name', 'Berkah WiFi Net');
 
-        $response->assertSessionHas('success');
-        $this->assertEquals('Berkah WiFi Net', Setting::get('app_name'));
-        $this->assertEquals('Seno Bumi Munajat', Setting::get('owner_name'));
-        $this->assertEquals('Owner / Pengelola', Setting::get('owner_title'));
-        $this->assertEquals('Ahmad Bendahara', Setting::get('finance_officer_name'));
-
-        // Check print view
         $printResponse = $this->actingAs($superAdmin)->get('/finances/print?range_type=month&month=10&year=2026');
         $printResponse->assertStatus(200);
         $printResponse->assertSee('Mengetahui,');
@@ -1345,7 +1334,42 @@ class VoucherNetTest extends TestCase
         $printResponse->assertSee('Seno Bumi Munajat');
         $printResponse->assertDontSee('Ketua / Pengelola RT-RW Net');
         $printResponse->assertSee('Dibuat Oleh,');
-        $printResponse->assertSee('Ahmad Bendahara');
+        $printResponse->assertSee('Bendahara / Bagian Keuangan');
+
+        // Restore original values
+        $superAdmin->update(['name' => $originalName]);
+        Setting::set('app_name', $originalAppName);
+    }
+
+    public function test_invoice_and_receipt_signatory_name_is_locked_to_original_creator_and_never_changes(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $superAdmin = User::where('role', 'super_admin')->first();
+        $tenant = User::where('role', 'tenant')->first();
+        $pkg = VoucherPackage::first();
+
+        // 1. Admin creates an offline order (tempo / unpaid)
+        $this->actingAs($admin)->post(route('admin.orders.store_offline'), [
+            'tenant_id' => $tenant->id,
+            'is_paid' => 0,
+            'items' => [$pkg->id => 5],
+        ]);
+
+        $order = Order::latest('id')->first();
+        $this->assertEquals($admin->id, $order->created_by);
+
+        // Viewed by Admin: Signatory should be Admin
+        $respAdmin = $this->actingAs($admin)->get(route('orders.invoice', $order));
+        $respAdmin->assertSee($admin->name);
+
+        // Viewed by Super Admin: Signatory MUST STILL be Admin (does NOT switch to Super Admin)
+        $respSuper = $this->actingAs($superAdmin)->get(route('orders.invoice', $order));
+        $respSuper->assertSee($admin->name);
+        $respSuper->assertDontSee($superAdmin->name);
+
+        // Viewed by Tenant: Signatory MUST STILL be Admin
+        $respTenant = $this->actingAs($tenant)->get(route('orders.invoice', $order));
+        $respTenant->assertSee($admin->name);
     }
 }
 

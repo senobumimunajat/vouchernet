@@ -265,11 +265,11 @@
             <div class="space-y-16">
                 <div>
                     <p class="text-slate-500">Mengetahui,</p>
-                    <p class="font-bold text-slate-900">{{ !empty($ownerTitle) ? $ownerTitle : 'Owner / Pengelola' }} {{ $appName }}</p>
+                    <p class="font-bold text-slate-900">Owner / Pengelola {{ $appName }}</p>
                 </div>
                 <div>
                     <p class="font-bold text-slate-900 border-b border-slate-400 pb-1 inline-block min-w-[160px]">
-                        ( {{ !empty($ownerName) ? $ownerName : '..................................................' }} )
+                        ( {{ $ownerName ?? 'Owner' }} )
                     </p>
                 </div>
             </div>
@@ -281,7 +281,7 @@
                 </div>
                 <div>
                     <p class="font-bold text-slate-900 border-b border-slate-400 pb-1 inline-block min-w-[160px]">
-                        {{ !empty($financeOfficerName) ? $financeOfficerName : (auth()->user()->name === 'Owner RT/RW Net (Super Admin)' ? (!empty($ownerName) ? $ownerName : 'Bendahara / Keuangan') : auth()->user()->name) }}
+                        {{ auth()->user()->name }}
                     </p>
                 </div>
             </div>

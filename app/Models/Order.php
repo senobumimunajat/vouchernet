@@ -12,6 +12,7 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'tenant_id',
+        'created_by',
         'customer_type',
         'customer_name',
         'package_id',
@@ -52,6 +53,11 @@ class Order extends Model
     public function tenant()
     {
         return $this->belongsTo(User::class, 'tenant_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items()

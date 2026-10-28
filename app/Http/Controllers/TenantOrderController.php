@@ -174,6 +174,7 @@ class TenantOrderController extends Controller
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'tenant_id' => $user->id,
+                'created_by' => $user->id,
                 'customer_type' => 'warung',
                 'package_id' => $firstPackageId,
                 'quantity' => $totalQty,

@@ -191,6 +191,7 @@ class AdminOrderController extends Controller
                 $order = Order::create([
                     'order_number' => $orderNumber,
                     'tenant_id' => $tenant->id,
+                    'created_by' => Auth::id(),
                     'customer_type' => 'direct',
                     'customer_name' => $customerName,
                     'package_id' => $firstPackageId,
@@ -278,6 +279,7 @@ class AdminOrderController extends Controller
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'tenant_id' => $tenant->id,
+                'created_by' => Auth::id(),
                 'customer_type' => 'warung',
                 'customer_name' => $tenant->shop_name ?: $tenant->name,
                 'package_id' => $firstPackageId,

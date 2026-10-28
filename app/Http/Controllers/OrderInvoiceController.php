@@ -21,7 +21,7 @@ class OrderInvoiceController extends Controller
             abort(403, 'Anda tidak memiliki hak akses untuk melihat dokumen pesanan ini.');
         }
 
-        $order->load(['tenant', 'package', 'confirmedByUser', 'items.package']);
+        $order->load(['tenant', 'package', 'confirmedByUser', 'creator', 'items.package']);
 
         $appName = Setting::get('app_name', 'VoucherNet');
         $adminPhone = Setting::get('admin_whatsapp_number', '6281234567890');
@@ -33,15 +33,23 @@ class OrderInvoiceController extends Controller
         $isLunas = $order->status === 'lunas';
         $customerName = $order->customer_display_name;
 
-        // Tentukan nama kasir / petugas yang menangani & mencetak dokumen:
-        // Jika diakses oleh admin / super admin, gunakan nama admin yang sedang login (yang klik dan mencetak)
-        // Jika diakses oleh tenant, gunakan nama admin pengonfirmasi (confirmedByUser) atau nama admin terdaftar
-        if ($user->isAdmin() || $user->isSuperAdmin()) {
-            $cashierName = $user->name;
+        // Nama kasir / petugas penandatangan faktur & kwitansi:
+        // Permanen mengikuti siapa petugas/kasir yang memproses transaksi asli:
+        // - Jika LUNAS: nama petugas yang mengonfirmasi/menerima pembayaran (confirmedByUser), atau pembuat transaksi (creator)
+        // - Jika TEMPO (Belum Lunas): nama petugas yang membuat dan mengeluarkan faktur (creator)
+        // - Nama TIDAK PERNAH berubah mengikuti siapa yang sedang membuka atau mencetak dokumen saat ini.
+        $cashierName = null;
+        if ($isLunas && $order->confirmedByUser) {
+            $cashierName = $order->confirmedByUser->name;
+        } elseif ($order->creator && ($order->creator->isAdmin() || $order->creator->isSuperAdmin())) {
+            $cashierName = $order->creator->name;
         } elseif ($order->confirmedByUser) {
             $cashierName = $order->confirmedByUser->name;
         } else {
-            $cashierName = \App\Models\User::whereIn('role', ['admin', 'super_admin'])->value('name') ?? 'Admin VoucherNet';
+            // Fallback untuk riwayat lama jika creator/confirmed_by kosong
+            $cashierName = ($user->isAdmin() || $user->isSuperAdmin())
+                ? $user->name
+                : (\App\Models\User::whereIn('role', ['admin', 'super_admin'])->value('name') ?? 'Admin Kasir');
         }
 
         $packageSummary = $order->package_names_summary;

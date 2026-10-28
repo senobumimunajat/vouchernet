@@ -34,11 +34,9 @@ class AppServiceProvider extends ServiceProvider
                 if (Schema::hasTable('settings')) {
                     $appName = \App\Models\Setting::get('app_name', 'VoucherNet RT/RW');
                     $appSubtitle = \App\Models\Setting::get('app_subtitle', 'Sistem Voucher & Buku Kas');
-                    $ownerName = \App\Models\Setting::get('owner_name');
-                    $ownerTitle = \App\Models\Setting::get('owner_title', 'Owner / Pengelola');
-                    $financeOfficerName = \App\Models\Setting::get('finance_officer_name');
                     $logoPath = \App\Models\Setting::get('app_logo_path');
                     $faviconPath = \App\Models\Setting::get('app_favicon_path');
+                    $ownerName = \App\Models\User::where('role', 'super_admin')->value('name') ?? 'Owner';
 
                     $appLogoUrl = $logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($logoPath)
                         ? asset('storage/' . $logoPath)
@@ -52,8 +50,6 @@ class AppServiceProvider extends ServiceProvider
                         'globalAppName' => $appName,
                         'globalAppSubtitle' => $appSubtitle,
                         'globalOwnerName' => $ownerName,
-                        'globalOwnerTitle' => $ownerTitle,
-                        'globalFinanceOfficerName' => $financeOfficerName,
                         'globalAppLogo' => $appLogoUrl,
                         'globalAppFavicon' => $appFaviconUrl,
                     ]);
@@ -66,9 +62,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with([
                 'globalAppName' => 'VoucherNet RT/RW',
                 'globalAppSubtitle' => 'Sistem Voucher & Buku Kas',
-                'globalOwnerName' => null,
-                'globalOwnerTitle' => 'Owner / Pengelola',
-                'globalFinanceOfficerName' => null,
+                'globalOwnerName' => 'Owner',
                 'globalAppLogo' => null,
                 'globalAppFavicon' => asset('favicon.svg'),
             ]);

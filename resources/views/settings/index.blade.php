@@ -24,7 +24,7 @@
             <div class="space-y-4">
                 <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
                     <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                    <h2 class="text-xs font-black uppercase tracking-wider text-slate-800">1. Identitas Brand & Penanggung Jawab Usaha</h2>
+                    <h2 class="text-xs font-black uppercase tracking-wider text-slate-800">1. Identitas Brand & Logo Usaha</h2>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -42,30 +42,6 @@
                             class="w-full px-4 py-3 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                             placeholder="Contoh: Layanan Hotspot & Voucher Murah">
                         <p class="text-[10px] text-slate-400 mt-1">Teks pelengkap di bawah nama usaha.</p>
-                    </div>
-
-                    <div>
-                        <label for="owner_name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Nama Pemilik / Owner Usaha</label>
-                        <input type="text" name="owner_name" id="owner_name" value="{{ old('owner_name', $ownerName) }}"
-                            class="w-full px-4 py-3 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                            placeholder="Contoh: Seno Bumi Munajat / H. Ahmad">
-                        <p class="text-[10px] text-slate-400 mt-1">Dicetak pada kolom tanda tangan: <b>Mengetahui, Owner / Pengelola [Nama Brand]</b>.</p>
-                    </div>
-
-                    <div>
-                        <label for="owner_title" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Sebutan Jabatan Owner</label>
-                        <input type="text" name="owner_title" id="owner_title" value="{{ old('owner_title', $ownerTitle ?? 'Owner / Pengelola') }}"
-                            class="w-full px-4 py-3 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                            placeholder="Contoh: Owner / Pengelola">
-                        <p class="text-[10px] text-slate-400 mt-1">Menggantikan teks 'Ketua / Pengelola'. Bawaan: <b>Owner / Pengelola</b>.</p>
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label for="finance_officer_name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Nama Bendahara / Petugas Keuangan (Opsional)</label>
-                        <input type="text" name="finance_officer_name" id="finance_officer_name" value="{{ old('finance_officer_name', $financeOfficerName) }}"
-                            class="w-full px-4 py-3 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                            placeholder="Kosongkan jika ingin otomatis menggunakan nama akun yang mencetak laporan">
-                        <p class="text-[10px] text-slate-400 mt-1">Dicetak pada kolom tanda tangan: <b>Dibuat Oleh, Bendahara / Bagian Keuangan</b>.</p>
                     </div>
                 </div>
 
