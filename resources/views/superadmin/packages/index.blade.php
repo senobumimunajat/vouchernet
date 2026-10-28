@@ -85,10 +85,47 @@
         </div>
     </div>
 
+    <!-- Tabs Navigasi Status Paket (Aktif vs Nonaktif) -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/80">
+        <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200/80 text-xs shrink-0 self-start">
+            <!-- Tab Paket Aktif -->
+            <button type="button" onclick="switchPackageTab('active')" id="tabBtnActive"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all shadow-xs bg-white text-blue-700">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Paket Aktif</span>
+                <span id="activeCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200/60">
+                    {{ $activePackagesCount }}
+                </span>
+            </button>
+
+            <!-- Tab Paket Nonaktif -->
+            <button type="button" onclick="switchPackageTab('inactive')" id="tabBtnInactive"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all text-slate-600 hover:text-slate-900">
+                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                <span>Paket Nonaktif</span>
+                <span id="inactiveCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ $inactivePackagesCount > 0 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-200 text-slate-700' }}">
+                    {{ $inactivePackagesCount }}
+                </span>
+            </button>
+
+            <!-- Tab Semua Paket -->
+            <button type="button" onclick="switchPackageTab('all')" id="tabBtnAll"
+                class="flex items-center gap-2 px-3.5 py-2 rounded-xl font-medium transition-all text-slate-500 hover:text-slate-900">
+                <span>Semua</span>
+                <span class="text-[10px] text-slate-400">({{ $packages->count() }})</span>
+            </button>
+        </div>
+
+        <div class="text-[11px] text-slate-400 font-medium">
+            <span id="tabStatusDescription">Menampilkan paket yang aktif melayani pembelian.</span>
+        </div>
+    </div>
+
     <!-- Package Cards Grid (Spacious 3 Columns on Desktop, No Cramping) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="packagesGrid">
         @foreach($packages as $pkg)
-        <div class="bg-white rounded-[28px] border {{ $selectedPackage == $pkg->id ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md' : $pkg->theme['card_border'] . ' shadow-[0_4px_25px_rgb(0,0,0,0.04)]' }} hover:shadow-lg flex flex-col justify-between overflow-hidden transition-all duration-200 group relative">
+        <div class="package-card bg-white rounded-[28px] border {{ $selectedPackage == $pkg->id ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md' : $pkg->theme['card_border'] . ' shadow-[0_4px_25px_rgb(0,0,0,0.04)]' }} hover:shadow-lg flex flex-col justify-between overflow-hidden transition-all duration-200 group relative {{ $pkg->is_active ? '' : 'opacity-90' }}"
+            data-is-active="{{ $pkg->is_active ? '1' : '0' }}">
             
             <!-- Top Gradient Accent Bar -->
             <div class="h-2 w-full bg-gradient-to-r {{ $pkg->theme['gradient_bar'] }}"></div>
@@ -260,6 +297,28 @@
         @endforeach
     </div>
 
+    <!-- Empty State: Paket Nonaktif Kosong -->
+    <div id="emptyInactiveBox" class="hidden text-center py-12 px-6 rounded-[28px] border-2 border-dashed border-slate-200 bg-slate-50/50 my-4">
+        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-xs">
+            ✨
+        </div>
+        <h4 class="text-sm font-bold text-slate-800">Semua Paket Saat Ini Aktif</h4>
+        <p class="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+            Tidak ada paket voucher yang sedang dinonaktifkan. Semua paket siap melayani transaksi dan pembuatan pesanan mitra.
+        </p>
+    </div>
+
+    <!-- Empty State: Paket Aktif Kosong -->
+    <div id="emptyActiveBox" class="hidden text-center py-12 px-6 rounded-[28px] border-2 border-dashed border-amber-200 bg-amber-50/30 my-4">
+        <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shadow-xs">
+            ⚠️
+        </div>
+        <h4 class="text-sm font-bold text-slate-800">Tidak Ada Paket Aktif</h4>
+        <p class="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+            Semua paket saat ini dinonaktifkan. Buka tab <strong>"Paket Nonaktif"</strong> untuk mengaktifkan kembali paket voucher.
+        </p>
+    </div>
+
     <!-- Riwayat & Analisis Mutasi Stok Voucher (Audit Log & Inventory Movement) -->
     <div id="riwayat-stok" class="bg-white rounded-[28px] border border-slate-200/70 overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)] space-y-6 p-5 sm:p-6">
         
@@ -288,6 +347,7 @@
 
         <!-- Filter Bar Form -->
         <form method="GET" action="{{ route('packages.index') }}#riwayat-stok" class="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
+            <input type="hidden" name="tab" id="formFilterTab" value="{{ $selectedTab }}">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 
                 <!-- 1. Filter Paket Voucher -->
@@ -647,9 +707,111 @@
         document.getElementById('stock_quantity').value = qty;
     }
 
+    function switchPackageTab(tab) {
+        const cards = document.querySelectorAll('.package-card');
+        const btnActive = document.getElementById('tabBtnActive');
+        const btnInactive = document.getElementById('tabBtnInactive');
+        const btnAll = document.getElementById('tabBtnAll');
+        const desc = document.getElementById('tabStatusDescription');
+        const emptyInactiveBox = document.getElementById('emptyInactiveBox');
+        const emptyActiveBox = document.getElementById('emptyActiveBox');
+        const packagesGrid = document.getElementById('packagesGrid');
+        const filterTabInput = document.getElementById('formFilterTab');
+
+        if (filterTabInput) {
+            filterTabInput.value = tab;
+        }
+
+        const baseClasses = 'flex items-center gap-2 px-4 py-2 rounded-xl transition-all';
+        const activeBtnClass = `${baseClasses} font-bold shadow-xs bg-white text-blue-700`;
+        const inactiveBtnClass = `${baseClasses} font-medium text-slate-600 hover:text-slate-900`;
+        const allInactiveBtnClass = `flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all font-medium text-slate-500 hover:text-slate-900`;
+        const allActiveBtnClass = `flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all font-bold shadow-xs bg-white text-blue-700`;
+
+        if (btnActive) btnActive.className = (tab === 'active') ? activeBtnClass : inactiveBtnClass;
+        if (btnInactive) btnInactive.className = (tab === 'inactive') ? activeBtnClass : inactiveBtnClass;
+        if (btnAll) btnAll.className = (tab === 'all') ? allActiveBtnClass : allInactiveBtnClass;
+
+        let visibleCount = 0;
+        let activeCount = 0;
+        let inactiveCount = 0;
+
+        cards.forEach(card => {
+            const isActive = card.getAttribute('data-is-active') === '1';
+            if (isActive) activeCount++;
+            else inactiveCount++;
+
+            if (tab === 'active') {
+                if (isActive) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            } else if (tab === 'inactive') {
+                if (!isActive) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            } else {
+                card.classList.remove('hidden');
+                visibleCount++;
+            }
+        });
+
+        if (desc) {
+            if (tab === 'active') {
+                desc.textContent = `Menampilkan ${activeCount} paket yang aktif melayani pembelian.`;
+            } else if (tab === 'inactive') {
+                desc.textContent = `Menampilkan ${inactiveCount} paket yang dinonaktifkan (diarsipkan).`;
+            } else {
+                desc.textContent = `Menampilkan seluruh ${activeCount + inactiveCount} paket voucher.`;
+            }
+        }
+
+        if (emptyInactiveBox) {
+            if (tab === 'inactive' && inactiveCount === 0) {
+                emptyInactiveBox.classList.remove('hidden');
+            } else {
+                emptyInactiveBox.classList.add('hidden');
+            }
+        }
+
+        if (emptyActiveBox) {
+            if (tab === 'active' && activeCount === 0) {
+                emptyActiveBox.classList.remove('hidden');
+            } else {
+                emptyActiveBox.classList.add('hidden');
+            }
+        }
+
+        if (packagesGrid) {
+            if (visibleCount === 0) {
+                packagesGrid.classList.add('hidden');
+            } else {
+                packagesGrid.classList.remove('hidden');
+            }
+        }
+
+        try {
+            const url = new URL(window.location.href);
+            if (url.searchParams.get('tab') !== tab) {
+                url.searchParams.set('tab', tab);
+                window.history.replaceState({}, '', url.toString());
+            }
+        } catch (e) {
+            // Ignore if URL object unavailable
+        }
+    }
+
     // Initialize default action
     document.addEventListener('DOMContentLoaded', function() {
         updateFormAction();
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentTab = urlParams.get('tab') || '{{ $selectedTab ?? "active" }}';
+        switchPackageTab(currentTab);
     });
 </script>
 @endsection

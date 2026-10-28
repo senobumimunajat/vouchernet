@@ -1241,12 +1241,23 @@ class VoucherNetTest extends TestCase
         // Toggle to opposite status
         $response = $this->actingAs($superAdmin)->post(route('packages.toggle', $pkg));
         $response->assertSessionHas('success');
+        $expectedTab = !$originalStatus ? 'active' : 'inactive';
+        $response->assertRedirect(route('packages.index', ['tab' => $expectedTab]));
         $this->assertEquals(!$originalStatus, $pkg->fresh()->is_active);
 
         // Toggle back
         $response = $this->actingAs($superAdmin)->post(route('packages.toggle', $pkg));
         $response->assertSessionHas('success');
+        $expectedTabBack = $originalStatus ? 'active' : 'inactive';
+        $response->assertRedirect(route('packages.index', ['tab' => $expectedTabBack]));
         $this->assertEquals($originalStatus, $pkg->fresh()->is_active);
+
+        // View index page with tabs
+        $indexResponse = $this->actingAs($superAdmin)->get(route('packages.index', ['tab' => 'inactive']));
+        $indexResponse->assertStatus(200);
+        $indexResponse->assertSee('Paket Nonaktif');
+        $indexResponse->assertSee('Paket Aktif');
+        $this->assertEquals('inactive', $indexResponse->viewData('selectedTab'));
     }
 
     public function test_super_admin_can_update_white_label_branding_and_upload_logo(): void

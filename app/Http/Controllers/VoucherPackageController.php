@@ -30,6 +30,8 @@ class VoucherPackageController extends Controller
         $totalOwnerValue = $packages->sum(fn($p) => $p->stock * $p->owner_price);
         $lowStockCount = $packages->filter(fn($p) => $p->stock <= 20)->count();
         $activePackagesCount = $packages->where('is_active', true)->count();
+        $inactivePackagesCount = $packages->where('is_active', false)->count();
+        $selectedTab = $request->input('tab', 'active');
 
         // Query untuk Riwayat & Analisis Arus Mutasi Stok
         $logsQuery = VoucherStockLog::with(['package', 'user'])->latest();
@@ -83,6 +85,8 @@ class VoucherPackageController extends Controller
             'totalOwnerValue',
             'lowStockCount',
             'activePackagesCount',
+            'inactivePackagesCount',
+            'selectedTab',
             'selectedPackage',
             'selectedType',
             'selectedMonth',
@@ -206,7 +210,9 @@ class VoucherPackageController extends Controller
         $package->save();
 
         $status = $package->is_active ? 'diaktifkan' : 'dinonaktifkan';
-        return back()->with('success', "Paket voucher '{$package->name}' berhasil {$status}.");
+        $targetTab = $package->is_active ? 'active' : 'inactive';
+        return redirect()->route('packages.index', ['tab' => $targetTab])
+            ->with('success', "Paket voucher '{$package->name}' berhasil {$status}.");
     }
 
     public function destroy(VoucherPackage $package)
