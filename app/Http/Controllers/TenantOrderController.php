@@ -227,7 +227,8 @@ class TenantOrderController extends Controller
         }
         $itemsText = implode("\n", $itemLines);
 
-        $text = "*Halo Admin VoucherNet,*\n" .
+        $appName = Setting::get('app_name', 'VoucherNet');
+        $text = "*Halo Admin {$appName},*\n" .
                 "Saya ingin memesan voucher hotspot:\n\n" .
                 "• *Mitra:* {$shop} ({$user->phone})\n" .
                 "• *Order ID:* {$order->order_number}\n\n" .

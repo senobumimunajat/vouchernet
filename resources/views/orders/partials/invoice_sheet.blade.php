@@ -223,13 +223,13 @@
         <div>
             @if($isLunas)
             <div class="stamp-lunas text-center py-1 px-3">
-                <div class="text-[8px] tracking-widest font-mono">VOUCHERNET</div>
+                <div class="text-[8px] tracking-widest font-mono uppercase truncate max-w-[120px]">{{ strtoupper($appName) }}</div>
                 <div class="text-xs sm:text-sm font-black my-0.2">★ LUNAS ★</div>
                 <div class="text-[8px] font-mono tracking-normal normal-case">
                     {{ $order->confirmed_at ? $order->confirmed_at->format('d/m/Y') : now()->format('d/m/Y') }}
                 </div>
                 <div class="text-[8px] font-mono uppercase tracking-normal">
-                    KASIR: {{ substr($cashierName, 0, 14) }}
+                    KASIR: {{ substr($cashierSigner ?? $cashierName, 0, 14) }}
                 </div>
             </div>
             @else

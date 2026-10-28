@@ -328,7 +328,7 @@
                 </div>
             </div>
             @php
-                $waTextSetoran = "*Halo Admin VoucherNet,*\nSaya dari *" . ($user->shop_name ?: $user->name) . "* ingin konfirmasi setoran voucher:\n- Total Voucher: " . number_format($pendingVouchersCount) . " lembar\n- Total Tagihan Setor: Rp " . number_format($pendingBillAmount, 0, ',', '.') . "\n\nMohon infokan nomor rekening / jika admin ada di tempat. Terima kasih!";
+                $waTextSetoran = "*Halo Admin " . ($globalAppName ?? 'VoucherNet') . ",*\nSaya dari *" . ($user->shop_name ?: $user->name) . "* ingin konfirmasi setoran voucher:\n- Total Voucher: " . number_format($pendingVouchersCount) . " lembar\n- Total Tagihan Setor: Rp " . number_format($pendingBillAmount, 0, ',', '.') . "\n\nMohon infokan nomor rekening / jika admin ada di tempat. Terima kasih!";
                 $waSetoranUrl = 'https://api.whatsapp.com/send?phone=' . $adminPhoneClean . '&text=' . rawurlencode($waTextSetoran);
             @endphp
             <div class="flex items-center gap-2 shrink-0">
@@ -421,7 +421,7 @@
                             Faktur Tagihan
                         </a>
                         @php
-                            $waSingleText = "*Halo Admin VoucherNet,*\nSaya ingin setorkan pesanan voucher:\n• *Order ID:* {$ord->order_number}\n• *Paket:* {$ord->package_names_summary}\n• *Jumlah:* {$ord->quantity} Lembar\n• *Total Setor:* *Rp " . number_format($ord->total_owner_amount, 0, ',', '.') . "*\n\nMohon konfirmasinya ya min!";
+                            $waSingleText = "*Halo Admin " . ($globalAppName ?? 'VoucherNet') . ",*\nSaya ingin setorkan pesanan voucher:\n• *Order ID:* {$ord->order_number}\n• *Paket:* {$ord->package_names_summary}\n• *Jumlah:* {$ord->quantity} Lembar\n• *Total Setor:* *Rp " . number_format($ord->total_owner_amount, 0, ',', '.') . "*\n\nMohon konfirmasinya ya min!";
                             $waSingleUrl = 'https://api.whatsapp.com/send?phone=' . $adminPhoneClean . '&text=' . rawurlencode($waSingleText);
                         @endphp
                         <a href="{{ $waSingleUrl }}" target="_blank" class="text-xs text-amber-800 bg-amber-100/80 hover:bg-amber-200/80 px-3.5 py-1.5 rounded-full border border-amber-300 font-bold inline-flex items-center gap-1.5 transition-colors">

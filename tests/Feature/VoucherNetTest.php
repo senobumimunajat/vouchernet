@@ -1394,6 +1394,7 @@ class VoucherNetTest extends TestCase
 
         $respOnlineKwitansi = $this->actingAs($superAdmin)->get(route('orders.invoice', $onlineOrder));
         $respOnlineKwitansi->assertSee($admin->name);
+        $respOnlineKwitansi->assertSee(strtoupper(Setting::get('app_name', 'VoucherNet')));
     }
 }
 
