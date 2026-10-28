@@ -62,7 +62,7 @@
                     @endif
                     <div>
                         <h1 class="text-xl font-extrabold text-slate-900 uppercase tracking-tight">{{ $appName }}</h1>
-                        <p class="text-xs text-slate-500 font-medium">{{ $globalAppSubtitle ?? 'Pengelolaan Jaringan Hotspot Komunitas & Buku Kas RT/RW' }}</p>
+                        <p class="text-xs text-slate-500 font-medium">{{ $globalAppSubtitle ?? 'Pengelolaan Jaringan Hotspot Komunitas & Buku Kas' }}</p>
                     </div>
                 </div>
             </div>
@@ -265,10 +265,12 @@
             <div class="space-y-16">
                 <div>
                     <p class="text-slate-500">Mengetahui,</p>
-                    <p class="font-bold text-slate-900">Ketua / Pengelola RT-RW Net</p>
+                    <p class="font-bold text-slate-900">{{ !empty($ownerTitle) ? $ownerTitle : 'Owner / Pengelola' }} {{ $appName }}</p>
                 </div>
                 <div>
-                    <p class="font-bold text-slate-900 border-b border-slate-400 pb-1 inline-block min-w-[160px]">( .................................................. )</p>
+                    <p class="font-bold text-slate-900 border-b border-slate-400 pb-1 inline-block min-w-[160px]">
+                        ( {{ !empty($ownerName) ? $ownerName : '..................................................' }} )
+                    </p>
                 </div>
             </div>
 
@@ -278,7 +280,9 @@
                     <p class="font-bold text-slate-900">Bendahara / Bagian Keuangan</p>
                 </div>
                 <div>
-                    <p class="font-bold text-slate-900 border-b border-slate-400 pb-1 inline-block min-w-[160px]">{{ auth()->user()->name }}</p>
+                    <p class="font-bold text-slate-900 border-b border-slate-400 pb-1 inline-block min-w-[160px]">
+                        {{ !empty($financeOfficerName) ? $financeOfficerName : (auth()->user()->name === 'Owner RT/RW Net (Super Admin)' ? (!empty($ownerName) ? $ownerName : 'Bendahara / Keuangan') : auth()->user()->name) }}
+                    </p>
                 </div>
             </div>
         </div>

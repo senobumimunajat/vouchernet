@@ -15,5 +15,6 @@ Thumbs.db
 /storage/framework/sessions/*
 /storage/framework/views/*
 /storage/logs/*.log
+/storage/app/public/*
 /database/*.sqlite
 /database/*.sqlite-journal

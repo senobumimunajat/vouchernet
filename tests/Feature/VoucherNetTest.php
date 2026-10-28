@@ -1316,6 +1316,37 @@ class VoucherNetTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertNull(Setting::get('app_logo_path'));
     }
+
+    public function test_super_admin_can_set_custom_owner_name_and_title_in_print_report(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        $response = $this->actingAs($superAdmin)->post(route('settings.update'), [
+            'app_name' => 'Berkah WiFi Net',
+            'app_subtitle' => 'Internet Komunitas',
+            'owner_name' => 'Seno Bumi Munajat',
+            'owner_title' => 'Owner / Pengelola',
+            'finance_officer_name' => 'Ahmad Bendahara',
+            'admin_whatsapp_number' => '6281234567890',
+            'bank_accounts' => 'BCA: 123456',
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertEquals('Berkah WiFi Net', Setting::get('app_name'));
+        $this->assertEquals('Seno Bumi Munajat', Setting::get('owner_name'));
+        $this->assertEquals('Owner / Pengelola', Setting::get('owner_title'));
+        $this->assertEquals('Ahmad Bendahara', Setting::get('finance_officer_name'));
+
+        // Check print view
+        $printResponse = $this->actingAs($superAdmin)->get('/finances/print?range_type=month&month=10&year=2026');
+        $printResponse->assertStatus(200);
+        $printResponse->assertSee('Mengetahui,');
+        $printResponse->assertSee('Owner / Pengelola Berkah WiFi Net');
+        $printResponse->assertSee('Seno Bumi Munajat');
+        $printResponse->assertDontSee('Ketua / Pengelola RT-RW Net');
+        $printResponse->assertSee('Dibuat Oleh,');
+        $printResponse->assertSee('Ahmad Bendahara');
+    }
 }
 
 

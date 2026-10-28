@@ -14,6 +14,9 @@ class SettingController extends Controller
         $bankAccounts = Setting::get('bank_accounts', "BCA: 123456789 a.n RT RW Net\nBRI: 987654321 a.n RT RW Net\nDANA: 081234567890");
         $appName = Setting::get('app_name', 'VoucherNet RT/RW');
         $appSubtitle = Setting::get('app_subtitle', 'Sistem Voucher & Buku Kas');
+        $ownerName = Setting::get('owner_name', '');
+        $ownerTitle = Setting::get('owner_title', 'Owner / Pengelola');
+        $financeOfficerName = Setting::get('finance_officer_name', '');
         $logoPath = Setting::get('app_logo_path');
         $faviconPath = Setting::get('app_favicon_path');
 
@@ -30,6 +33,9 @@ class SettingController extends Controller
             'bankAccounts',
             'appName',
             'appSubtitle',
+            'ownerName',
+            'ownerTitle',
+            'financeOfficerName',
             'appLogoUrl',
             'appFaviconUrl'
         ));
@@ -40,6 +46,9 @@ class SettingController extends Controller
         $request->validate([
             'app_name' => ['required', 'string', 'max:100'],
             'app_subtitle' => ['nullable', 'string', 'max:150'],
+            'owner_name' => ['nullable', 'string', 'max:100'],
+            'owner_title' => ['nullable', 'string', 'max:100'],
+            'finance_officer_name' => ['nullable', 'string', 'max:100'],
             'admin_whatsapp_number' => ['required', 'string', 'max:25'],
             'bank_accounts' => ['required', 'string', 'max:1000'],
             'app_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
@@ -55,8 +64,18 @@ class SettingController extends Controller
 
         Setting::set('app_name', trim($request->input('app_name')));
         Setting::set('app_subtitle', trim($request->input('app_subtitle', 'Sistem Voucher & Buku Kas')));
+        Setting::set('owner_name', trim($request->input('owner_name', '')));
+        Setting::set('owner_title', trim($request->input('owner_title', 'Owner / Pengelola')));
+        Setting::set('finance_officer_name', trim($request->input('finance_officer_name', '')));
         Setting::set('admin_whatsapp_number', trim($request->input('admin_whatsapp_number')));
         Setting::set('bank_accounts', trim($request->input('bank_accounts')));
+
+        // If owner_name is supplied and current user is Super Admin with placeholder name, sync user name
+        if ($request->filled('owner_name') && auth()->user()->isSuperAdmin()) {
+            if (auth()->user()->name === 'Owner RT/RW Net (Super Admin)') {
+                auth()->user()->update(['name' => trim($request->input('owner_name'))]);
+            }
+        }
 
         // Handle Logo Upload / Removal
         if ($request->hasFile('app_logo')) {

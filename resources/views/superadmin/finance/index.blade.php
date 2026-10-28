@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">Buku Kas & Analisis Laba</h1>
-            <p class="text-xs text-slate-500 mt-1">Laporan omzet voucher, pemasukan kas lain, beban pengeluaran, dan laba operasional RT/RW Net.</p>
+            <p class="text-xs text-slate-500 mt-1">Laporan omzet voucher, pemasukan kas lain, beban pengeluaran, dan laba operasional {{ $globalAppName ?? 'usaha' }}.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
             <a href="{{ route('finance.print', request()->query()) }}" target="_blank"
@@ -206,7 +206,7 @@
         <div class="bg-white p-5 sm:p-6 rounded-[28px] border border-slate-200/70 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between space-y-2">
             <div>
                 <div class="flex items-center justify-between text-slate-400">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Laba Bersih RT/RW Net</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Laba Bersih {{ $globalAppName ?? 'Usaha' }}</span>
                     <span class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/></svg>
                     </span>

@@ -525,6 +525,9 @@ class FinanceController extends Controller
 
         $appName = Setting::get('app_name', 'VoucherNet RT/RW');
         $adminPhone = Setting::get('admin_whatsapp_number', '0812-3456-7890');
+        $ownerName = Setting::get('owner_name');
+        $ownerTitle = Setting::get('owner_title', 'Owner / Pengelola');
+        $financeOfficerName = Setting::get('finance_officer_name');
         $selectedTenantUser = $selectedTenant ? User::find($selectedTenant) : null;
 
         return view('superadmin.finance.print', compact(
@@ -545,7 +548,10 @@ class FinanceController extends Controller
             'incomes',
             'expenses',
             'appName',
-            'adminPhone'
+            'adminPhone',
+            'ownerName',
+            'ownerTitle',
+            'financeOfficerName'
         ));
     }
 
