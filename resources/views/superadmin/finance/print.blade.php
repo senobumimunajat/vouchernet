@@ -51,12 +51,18 @@
         <div class="border-b-2 border-slate-900 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2.5">
+                    @if(!empty($globalAppLogo))
+                    <div class="h-11 w-auto flex items-center justify-center shrink-0">
+                        <img src="{{ $globalAppLogo }}" alt="{{ $appName }}" class="h-10 w-auto max-w-[140px] object-contain">
+                    </div>
+                    @else
                     <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-extrabold text-lg">
                         VN
                     </div>
+                    @endif
                     <div>
                         <h1 class="text-xl font-extrabold text-slate-900 uppercase tracking-tight">{{ $appName }}</h1>
-                        <p class="text-xs text-slate-500 font-medium">Pengelolaan Jaringan Hotspot Komunitas & Buku Kas RT/RW</p>
+                        <p class="text-xs text-slate-500 font-medium">{{ $globalAppSubtitle ?? 'Pengelolaan Jaringan Hotspot Komunitas & Buku Kas RT/RW' }}</p>
                     </div>
                 </div>
             </div>

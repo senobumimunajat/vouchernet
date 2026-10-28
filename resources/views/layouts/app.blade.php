@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name', 'VoucherNet') }} - @yield('title', 'Sistem Rekap Voucher')</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <title>{{ $globalAppName ?? config('app.name', 'VoucherNet') }} - @yield('title', 'Sistem Rekap Voucher')</title>
+    <link rel="icon" href="{{ $globalAppFavicon ?? asset('favicon.svg') }}">
     <!-- Modern Geometric Typography: Plus Jakarta Sans (Friendly, Clean, Perfectly Aligned) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,6 +57,11 @@
                 <!-- Custom Bespoke Brand Identity -->
                 <div class="flex items-center min-w-0 shrink">
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2 group min-w-0">
+                        @if(!empty($globalAppLogo))
+                        <div class="h-8 sm:h-10 w-auto flex items-center justify-center shrink-0">
+                            <img src="{{ $globalAppLogo }}" alt="{{ $globalAppName }}" class="h-7 sm:h-9 w-auto max-w-[130px] object-contain rounded-lg">
+                        </div>
+                        @else
                         <!-- Bespoke Geometric Mark: V-Signal (Voucher Foundation + 3 WiFi Bars) -->
                         <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20 group-hover:scale-105 transition-transform duration-200 shrink-0">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" viewBox="0 0 256 256" fill="currentColor">
@@ -66,17 +71,15 @@
                                 <rect x="172" y="46" width="28" height="96" rx="14" transform="rotate(15 186 94)"/>
                             </svg>
                         </div>
+                        @endif
                         <div class="flex flex-col min-w-0">
                             <div class="flex items-center gap-1 sm:gap-1.5 leading-none">
                                 <span class="text-xs sm:text-base font-extrabold text-slate-900 tracking-tight truncate">
-                                    Voucher<span class="text-blue-600">Net</span>
-                                </span>
-                                <span class="px-1 sm:px-1.5 py-0.5 text-[8px] sm:text-[10px] font-bold bg-blue-50 text-blue-700 rounded-md border border-blue-200/60 hidden xs:inline-block">
-                                    RT/RW
+                                    {{ $globalAppName }}
                                 </span>
                             </div>
                             <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 tracking-normal mt-0.5 hidden md:inline truncate">
-                                Sistem Voucher & Buku Kas
+                                {{ $globalAppSubtitle ?? 'Sistem Voucher & Buku Kas' }}
                             </span>
                         </div>
                     </a>

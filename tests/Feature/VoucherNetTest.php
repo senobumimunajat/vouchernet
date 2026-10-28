@@ -5,9 +5,12 @@ namespace Tests\Feature;
 use App\Models\Expense;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\VoucherPackage;
 use App\Models\VoucherStockLog;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class VoucherNetTest extends TestCase
@@ -1242,6 +1245,76 @@ class VoucherNetTest extends TestCase
         $response = $this->actingAs($superAdmin)->post(route('packages.toggle', $pkg));
         $response->assertSessionHas('success');
         $this->assertEquals($originalStatus, $pkg->fresh()->is_active);
+    }
+
+    public function test_super_admin_can_update_white_label_branding_and_upload_logo(): void
+    {
+        Storage::fake('public');
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        $logoFile = UploadedFile::fake()->image('custom-logo.png', 200, 80);
+        $faviconFile = UploadedFile::fake()->create('custom-favicon.ico', 32, 'image/x-icon');
+
+        $response = $this->actingAs($superAdmin)->post(route('settings.update'), [
+            'app_name' => 'Berkah WiFi Net',
+            'app_subtitle' => 'Internet Cepat Warga RW 05',
+            'admin_whatsapp_number' => '6289912345678',
+            'bank_accounts' => 'BCA: 999111222',
+            'app_logo' => $logoFile,
+            'app_favicon' => $faviconFile,
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertEquals('Berkah WiFi Net', Setting::get('app_name'));
+        $this->assertEquals('Internet Cepat Warga RW 05', Setting::get('app_subtitle'));
+        $this->assertNotNull(Setting::get('app_logo_path'));
+        $this->assertNotNull(Setting::get('app_favicon_path'));
+        Storage::disk('public')->assertExists(Setting::get('app_logo_path'));
+        Storage::disk('public')->assertExists(Setting::get('app_favicon_path'));
+
+        // Check if reflected on pages
+        $pageResponse = $this->actingAs($superAdmin)->get('/settings');
+        $pageResponse->assertSee('Berkah WiFi Net');
+        $pageResponse->assertSee('Internet Cepat Warga RW 05');
+        $pageResponse->assertSee(asset('storage/' . Setting::get('app_logo_path')));
+
+        // Check on invoice
+        $order = Order::first();
+        if ($order) {
+            $invoiceResponse = $this->actingAs($superAdmin)->get(route('orders.invoice', $order));
+            $invoiceResponse->assertSee('Berkah WiFi Net');
+            $invoiceResponse->assertSee('Internet Cepat Warga RW 05');
+        }
+    }
+
+    public function test_super_admin_can_remove_custom_logo_and_reset_to_default(): void
+    {
+        Storage::fake('public');
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        // Setup logo first
+        $logoFile = UploadedFile::fake()->image('my-logo.png');
+        $this->actingAs($superAdmin)->post(route('settings.update'), [
+            'app_name' => 'VoucherNet Custom',
+            'app_subtitle' => 'Sistem Kustom',
+            'admin_whatsapp_number' => '6281234567890',
+            'bank_accounts' => 'BCA: 123456',
+            'app_logo' => $logoFile,
+        ]);
+
+        $this->assertNotNull(Setting::get('app_logo_path'));
+
+        // Remove logo
+        $response = $this->actingAs($superAdmin)->post(route('settings.update'), [
+            'app_name' => 'VoucherNet Custom',
+            'app_subtitle' => 'Sistem Kustom',
+            'admin_whatsapp_number' => '6281234567890',
+            'bank_accounts' => 'BCA: 123456',
+            'remove_logo' => 1,
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertNull(Setting::get('app_logo_path'));
     }
 }
 

@@ -4,6 +4,11 @@
     <!-- HEADER KOP DOKUMEN -->
     <div class="flex items-start justify-between pb-2.5 border-b border-slate-200 gap-3">
         <div class="flex items-center gap-2.5">
+            @if(!empty($globalAppLogo))
+            <div class="h-9 sm:h-10 w-auto flex items-center justify-center shrink-0">
+                <img src="{{ $globalAppLogo }}" alt="{{ $appName }}" class="h-8 sm:h-9 w-auto max-w-[130px] object-contain rounded-lg">
+            </div>
+            @else
             <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm print:shadow-none">
                 <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" viewBox="0 0 256 256" fill="currentColor">
                     <rect x="66" y="44" width="34" height="168" rx="17" transform="rotate(-15 83 128)"/>
@@ -12,9 +17,10 @@
                     <rect x="172" y="46" width="28" height="96" rx="14" transform="rotate(15 186 94)"/>
                 </svg>
             </div>
+            @endif
             <div>
                 <h1 class="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-none">{{ $appName }}</h1>
-                <p class="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">Layanan Hotspot & Distribusi Voucher Jaringan</p>
+                <p class="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">{{ $globalAppSubtitle ?? 'Layanan Hotspot & Distribusi Voucher Jaringan' }}</p>
                 <p class="text-[9px] text-slate-400 font-mono">CS/Admin WA: {{ $adminPhone }}</p>
             </div>
         </div>

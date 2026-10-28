@@ -3,8 +3,8 @@
     
     <!-- Store Header -->
     <div class="text-center pb-1">
-        <div class="text-sm font-black uppercase tracking-wider">{{ $appName }} HOTSPOT</div>
-        <div class="text-[10px] text-slate-600">Layanan Internet & Voucher Jaringan</div>
+        <div class="text-sm font-black uppercase tracking-wider">{{ $appName }}</div>
+        <div class="text-[10px] text-slate-600">{{ $globalAppSubtitle ?? 'Layanan Internet & Voucher Jaringan' }}</div>
         <div class="text-[10px] text-slate-600">CS / WA: {{ $adminPhone }}</div>
     </div>
 

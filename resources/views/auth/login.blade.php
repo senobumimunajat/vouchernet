@@ -7,6 +7,11 @@
     <div class="w-full max-w-md">
         <!-- Brand Header Identity (Clean Royal Blue Logo Mark) -->
         <div class="text-center mb-8">
+            @if(!empty($globalAppLogo))
+            <div class="inline-flex items-center justify-center mb-4 group hover:scale-105 transition-transform duration-200">
+                <img src="{{ $globalAppLogo }}" alt="{{ $globalAppName }}" class="h-16 w-auto max-w-[220px] object-contain drop-shadow-md rounded-2xl">
+            </div>
+            @else
             <div class="inline-flex w-16 h-16 rounded-[24px] bg-blue-600 text-white items-center justify-center shadow-lg shadow-blue-500/20 mb-4 group hover:scale-105 transition-transform duration-200">
                 <svg class="w-9 h-9 text-white" viewBox="0 0 256 256" fill="currentColor">
                     <rect x="66" y="44" width="34" height="168" rx="17" transform="rotate(-15 83 128)"/>
@@ -15,10 +20,11 @@
                     <rect x="172" y="46" width="28" height="96" rx="14" transform="rotate(15 186 94)"/>
                 </svg>
             </div>
+            @endif
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                Voucher<span class="text-blue-600">Net</span>
+                {{ $globalAppName }}
             </h1>
-            <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium">Sistem Manajemen Voucher & Buku Kas RT/RW Net</p>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1 font-medium">{{ $globalAppSubtitle ?? 'Sistem Manajemen Voucher & Buku Kas RT/RW Net' }}</p>
         </div>
 
         <!-- Login Form Card -->
