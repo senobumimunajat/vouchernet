@@ -762,8 +762,14 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Keperluan / Sumber Pemasukan</label>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Keperluan / Alasan Masuk</label>
                 <input type="text" name="purpose" placeholder="Misal: Restock Pembelian Baru / Retur dari Mitra Toko A"
+                    class="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Asal Barang / Toko / Supplier</label>
+                <input type="text" name="supplier_or_source" placeholder="Misal: Toko Komputer Jaya / Posko Pusat / Mitra..."
                     class="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
             </div>
 

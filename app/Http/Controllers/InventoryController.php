@@ -281,12 +281,16 @@ class InventoryController extends Controller
 
         $item = InventoryItem::findOrFail($validated['inventory_item_id']);
 
+        $purpose = !empty($validated['purpose']) ? $validated['purpose'] : 'Pemasukan / Restock Barang';
+        $source = !empty($validated['supplier_or_source']) ? $validated['supplier_or_source'] : 'Gudang Posko';
+        $notes = $validated['notes'] ?? null;
+
         $item->addStock(
             (int) $validated['quantity'],
-            $validated['purpose'] ?: 'Pemasukan / Restock Barang',
-            $validated['supplier_or_source'] ?: 'Gudang Posko',
+            $purpose,
+            $source,
             null,
-            $validated['notes'],
+            $notes,
             Auth::id(),
             $validated['movement_date']
         );
@@ -319,11 +323,14 @@ class InventoryController extends Controller
             ])->withInput();
         }
 
+        $recipient = !empty($validated['recipient']) ? $validated['recipient'] : 'Mitra / Operasional';
+        $notes = $validated['notes'] ?? null;
+
         $item->deductStock(
             (int) $validated['quantity'],
             $validated['purpose'],
-            $validated['recipient'] ?: 'Mitra / Operasional',
-            $validated['notes'],
+            $recipient,
+            $notes,
             Auth::id(),
             $validated['movement_date']
         );

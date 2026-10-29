@@ -1491,6 +1491,16 @@ class VoucherNetTest extends TestCase
         $movement = InventoryMovement::latest('id')->first();
         $this->assertEquals('in', $movement->type);
         $this->assertEquals(5, $movement->quantity);
+
+        // Also test stock in when optional fields (supplier_or_source, purpose, notes) are omitted
+        $respMinimal = $this->actingAs($superAdmin)->post(route('inventory.movements.in'), [
+            'inventory_item_id' => $item->id,
+            'quantity' => 2,
+            'movement_date' => date('Y-m-d'),
+        ]);
+        $respMinimal->assertSessionHas('success');
+        $item->refresh();
+        $this->assertEquals($initialStock + 7, $item->stock);
     }
 
     public function test_expense_can_be_checked_to_automatically_add_stock_to_existing_inventory(): void
