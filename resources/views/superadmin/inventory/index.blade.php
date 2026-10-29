@@ -21,17 +21,17 @@
         <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <button type="button" onclick="openStockOutModal()" class="flex-1 sm:flex-none py-2.5 px-3.5 rounded-2xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/80 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 touch-target">
                 <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/></svg>
-                <span>- Catat Barang Keluar</span>
+                <span>Catat Barang Keluar</span>
             </button>
 
             <button type="button" onclick="openStockInModal()" class="flex-1 sm:flex-none py-2.5 px-3.5 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 touch-target">
                 <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3"/></svg>
-                <span>+ Catat Barang Masuk</span>
+                <span>Catat Barang Masuk</span>
             </button>
 
             <button type="button" onclick="openCreateItemModal()" class="w-full sm:w-auto py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm shadow-blue-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-target">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                <span>+ Tambah Master Barang</span>
+                <span>Tambah Master Barang</span>
             </button>
         </div>
     </div>
@@ -324,13 +324,13 @@
                             <button type="button" onclick="openStockInModal({{ $item->id }}, '{{ addslashes($item->name) }}', '{{ $item->unit }}')"
                                 class="py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1 shadow-sm shadow-emerald-500/20 active:scale-95 touch-target">
                                 <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                                <span>+ Masuk</span>
+                                <span>Masuk</span>
                             </button>
 
                             <button type="button" onclick="openStockOutModal({{ $item->id }}, '{{ addslashes($item->name) }}', '{{ $item->unit }}', {{ $item->stock }})"
                                 class="py-2.5 px-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1 shadow-sm shadow-rose-500/20 active:scale-95 touch-target">
                                 <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.5 12h-15"/></svg>
-                                <span>- Keluar</span>
+                                <span>Keluar</span>
                             </button>
                         </div>
                     </div>
@@ -358,11 +358,11 @@
                 </div>
                 <h4 class="text-sm font-bold text-slate-800">Tidak ada barang inventaris yang sesuai</h4>
                 <p class="text-xs text-slate-400 max-w-sm mx-auto mt-1 leading-relaxed">
-                    Silakan reset filter pencarian atau klik tombol <strong>"+ Tambah Master Barang"</strong> untuk menambahkan aset perangkat fisik baru.
+                    Silakan reset filter pencarian atau klik tombol <strong>"Tambah Master Barang"</strong> untuk menambahkan aset perangkat fisik baru.
                 </p>
                 <div class="mt-4">
                     <button type="button" onclick="openCreateItemModal()" class="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-all touch-target">
-                        + Tambah Master Barang Sekarang
+                        Tambah Master Barang Sekarang
                     </button>
                 </div>
             </div>
@@ -727,7 +727,7 @@
             <div class="flex items-center gap-2.5">
                 <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base">⬇️</span>
                 <div>
-                    <h3 class="text-sm font-extrabold text-slate-900">Catat Barang Masuk (+ Restock)</h3>
+                    <h3 class="text-sm font-extrabold text-slate-900">Catat Barang Masuk (Restock)</h3>
                     <p class="text-[11px] text-slate-400">Pemasukan stok fisik tanpa pengeluaran kas atau retur.</p>
                 </div>
             </div>
@@ -776,7 +776,7 @@
             <div class="pt-3 flex justify-end gap-2.5 border-t border-slate-100">
                 <button type="button" onclick="closeStockInModal()" class="px-4 py-2.5 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Batal</button>
                 <button type="submit" class="px-5 py-2.5 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 font-bold text-xs shadow-sm shadow-emerald-500/20 active:scale-[0.98] transition-all">
-                    + Simpan Barang Masuk
+                    Simpan Barang Masuk
                 </button>
             </div>
         </form>
@@ -790,7 +790,7 @@
             <div class="flex items-center gap-2.5">
                 <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-base">⬆️</span>
                 <div>
-                    <h3 class="text-sm font-extrabold text-slate-900">Catat Barang Keluar (- Pemasangan)</h3>
+                    <h3 class="text-sm font-extrabold text-slate-900">Catat Barang Keluar (Pemasangan)</h3>
                     <p class="text-[11px] text-slate-400">Pengurangan stok untuk pemasangan di mitra, tiang, atau warga.</p>
                 </div>
             </div>
@@ -845,7 +845,7 @@
             <div class="pt-3 flex justify-end gap-2.5 border-t border-slate-100">
                 <button type="button" onclick="closeStockOutModal()" class="px-4 py-2.5 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Batal</button>
                 <button type="submit" class="px-5 py-2.5 rounded-full bg-rose-600 text-white hover:bg-rose-700 font-bold text-xs shadow-sm shadow-rose-500/20 active:scale-[0.98] transition-all">
-                    - Simpan Barang Keluar
+                    Simpan Barang Keluar
                 </button>
             </div>
         </form>
