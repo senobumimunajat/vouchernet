@@ -181,7 +181,7 @@ class InventoryController extends Controller
                 'stock' => 0,
                 'min_stock' => (int) ($validated['min_stock'] ?? 0),
                 'unit_price' => !empty($validated['unit_price']) ? (float) $validated['unit_price'] : null,
-                'location' => !empty($validated['location']) ? trim($validated['location']) : 'Gudang Posko',
+                'location' => !empty($validated['location']) ? trim($validated['location']) : 'Gudang',
                 'description' => $validated['description'] ?? null,
                 'photo' => $photoPath,
                 'is_active' => true,
@@ -191,7 +191,7 @@ class InventoryController extends Controller
                 $item->addStock(
                     $initialStock,
                     'Stok Awal Pendaftaran Barang',
-                    $item->location ?? 'Gudang Posko',
+                    $item->location ?? 'Gudang',
                     null,
                     'Input saldo awal inventaris baru',
                     Auth::id()
@@ -247,7 +247,7 @@ class InventoryController extends Controller
             'unit' => $validated['unit'],
             'min_stock' => (int) $validated['min_stock'],
             'unit_price' => !empty($validated['unit_price']) ? (float) $validated['unit_price'] : null,
-            'location' => !empty($validated['location']) ? trim($validated['location']) : 'Gudang Posko',
+            'location' => !empty($validated['location']) ? trim($validated['location']) : 'Gudang',
             'description' => $validated['description'] ?? null,
             'is_active' => $request->has('is_active') ? (bool) $request->is_active : true,
         ]);
@@ -292,7 +292,7 @@ class InventoryController extends Controller
         $item = InventoryItem::findOrFail($validated['inventory_item_id']);
 
         $purpose = !empty($validated['purpose']) ? $validated['purpose'] : 'Pemasukan / Restock Barang';
-        $source = !empty($validated['supplier_or_source']) ? $validated['supplier_or_source'] : 'Gudang Posko';
+        $source = !empty($validated['supplier_or_source']) ? $validated['supplier_or_source'] : 'Gudang';
         $notes = $validated['notes'] ?? null;
 
         $item->addStock(

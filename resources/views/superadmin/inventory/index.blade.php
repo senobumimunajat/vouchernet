@@ -245,7 +245,7 @@
                         <div class="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
                             <span class="inline-flex items-center gap-1">
                                 <span>📍</span>
-                                <span class="font-semibold text-slate-700">{{ $item->location ?: 'Gudang Posko' }}</span>
+                                <span class="font-semibold text-slate-700">{{ $item->location ?: 'Gudang' }}</span>
                             </span>
                             @if($item->min_stock > 0)
                             <span class="text-slate-300">•</span>
@@ -688,9 +688,9 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Lokasi Penyimpanan</label>
-                <input type="text" name="location" placeholder="Gudang Posko (Bawaan otomatis jika kosong)"
+                <input type="text" name="location" placeholder="Gudang (Bawaan otomatis jika kosong)"
                     class="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-                <span class="text-[10px] text-slate-400 mt-1 block">Jika kosong, langsung terdeteksi berada di <strong>Gudang Posko</strong>.</span>
+                <span class="text-[10px] text-slate-400 mt-1 block">Jika kosong, langsung terdeteksi berada di <strong>Gudang</strong>.</span>
             </div>
 
             <div>

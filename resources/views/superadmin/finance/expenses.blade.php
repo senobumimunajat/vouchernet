@@ -172,7 +172,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Lokasi Penyimpanan</label>
-                            <input type="text" name="inventory_location" placeholder="Misal: Gudang Posko RT / Rak Server"
+                            <input type="text" name="inventory_location" placeholder="Gudang (Bawaan jika kosong)"
                                 class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>

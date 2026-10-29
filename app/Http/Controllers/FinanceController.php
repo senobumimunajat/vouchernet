@@ -662,7 +662,7 @@ class FinanceController extends Controller
                         'stock' => 0,
                         'min_stock' => 2,
                         'unit_price' => round((float) $validated['amount'] / $inventoryQty, 2),
-                        'location' => $inventoryLocation ?: 'Gudang Posko',
+                        'location' => $inventoryLocation ?: 'Gudang',
                         'description' => 'Didaftarkan otomatis dari Pengeluaran ' . $expenseNumber,
                         'is_active' => true,
                     ]);
@@ -689,7 +689,7 @@ class FinanceController extends Controller
                 $targetItem->addStock(
                     $inventoryQty,
                     "Pembelian Kas: {$validated['title']} ({$expenseNumber})",
-                    $inventoryLocation ?: ($targetItem->location ?: 'Gudang Posko'),
+                    $inventoryLocation ?: ($targetItem->location ?: 'Gudang'),
                     $expense->id,
                     $validated['notes'] ?? "Dicatat otomatis dari menu pengeluaran kas.",
                     Auth::id(),
