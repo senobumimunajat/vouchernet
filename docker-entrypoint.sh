@@ -16,8 +16,17 @@ mkdir -p /var/www/html/storage/framework/sessions \
          /var/www/html/storage/app/public/proofs \
          /var/www/html/storage/app/public/vouchers \
          /var/www/html/storage/app/public/receipts \
+         /var/www/html/storage/app/public/inventory_photos \
+         /var/www/html/storage/app/public/branding \
          /var/www/html/bootstrap/cache \
          /var/www/html/database
+
+# Configure PHP upload limits for inventory and receipts
+if [ -d /usr/local/etc/php/conf.d ]; then
+    echo "upload_max_filesize = 32M" > /usr/local/etc/php/conf.d/uploads.ini
+    echo "post_max_size = 32M" >> /usr/local/etc/php/conf.d/uploads.ini
+    echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini
+fi
 
 # Ensure SQLite file exists
 if [ ! -f /var/www/html/database/database.sqlite ]; then

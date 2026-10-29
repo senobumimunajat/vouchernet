@@ -991,14 +991,76 @@
         document.getElementById('createItemModal').classList.add('hidden');
     }
 
-    function previewCreatePhoto(input) {
+    function compressImageFile(file, maxWidth = 1280, maxHeight = 1280, quality = 0.85) {
+        return new Promise((resolve) => {
+            if (!file || !file.type.match(/image.*/)) {
+                resolve(file);
+                return;
+            }
+            if (file.size < 500 * 1024) {
+                resolve(file);
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth || height > maxHeight) {
+                        if (width > height) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        } else {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        if (blob && blob.size < file.size) {
+                            const compressed = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(compressed);
+                        } else {
+                            resolve(file);
+                        }
+                    }, 'image/jpeg', quality);
+                };
+                img.onerror = () => resolve(file);
+                img.src = e.target.result;
+            };
+            reader.onerror = () => resolve(file);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function previewCreatePhoto(input) {
         const box = document.getElementById('createPhotoPreviewBox');
         if (input.files && input.files[0]) {
+            const rawFile = input.files[0];
             const reader = new FileReader();
             reader.onload = function(e) {
                 box.innerHTML = '<img src="' + e.target.result + '" class="w-full h-full object-cover">';
             };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(rawFile);
+
+            if (rawFile.size > 600 * 1024) {
+                try {
+                    const compressed = await compressImageFile(rawFile);
+                    const dt = new DataTransfer();
+                    dt.items.add(compressed);
+                    input.files = dt.files;
+                } catch (e) {
+                    console.warn('Kompresi client-side dilewati:', e);
+                }
+            }
         }
     }
 
@@ -1069,17 +1131,29 @@
         document.getElementById('editItemModal').classList.add('hidden');
     }
 
-    function previewEditPhoto(input) {
+    async function previewEditPhoto(input) {
         const img = document.getElementById('editPhotoImg');
         const emptyIcon = document.getElementById('editPhotoEmptyIcon');
         if (input.files && input.files[0]) {
+            const rawFile = input.files[0];
             const reader = new FileReader();
             reader.onload = function(e) {
                 img.src = e.target.result;
                 img.classList.remove('hidden');
                 emptyIcon.classList.add('hidden');
             };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(rawFile);
+
+            if (rawFile.size > 600 * 1024) {
+                try {
+                    const compressed = await compressImageFile(rawFile);
+                    const dt = new DataTransfer();
+                    dt.items.add(compressed);
+                    input.files = dt.files;
+                } catch (e) {
+                    console.warn('Kompresi edit photo dilewati:', e);
+                }
+            }
         }
     }
 

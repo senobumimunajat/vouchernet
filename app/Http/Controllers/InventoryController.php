@@ -156,7 +156,12 @@ class InventoryController extends Controller
             'unit_price' => ['nullable', 'numeric', 'min:0'],
             'location' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
-            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:20480'],
+        ], [
+            'photo.image' => 'File yang diunggah harus berupa gambar.',
+            'photo.mimes' => 'Format foto harus berupa JPG, PNG, atau WebP.',
+            'photo.max' => 'Ukuran foto maksimal 20MB.',
+            'photo.uploaded' => 'Foto gagal diunggah karena ukuran melebihi batas sistem. Sistem sekarang sudah mendukung otomatisasi kompresi foto kamera.',
         ]);
 
         $itemCode = InventoryItem::generateCode($validated['category']);
@@ -214,9 +219,14 @@ class InventoryController extends Controller
             'unit_price' => ['nullable', 'numeric', 'min:0'],
             'location' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
-            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:20480'],
             'remove_photo' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
+        ], [
+            'photo.image' => 'File yang diunggah harus berupa gambar.',
+            'photo.mimes' => 'Format foto harus berupa JPG, PNG, atau WebP.',
+            'photo.max' => 'Ukuran foto maksimal 20MB.',
+            'photo.uploaded' => 'Foto gagal diunggah karena ukuran melebihi batas sistem.',
         ]);
 
         if ($request->boolean('remove_photo') && $item->photo) {
