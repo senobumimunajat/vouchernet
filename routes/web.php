@@ -70,6 +70,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/finances/expenses', [FinanceController::class, 'storeExpense'])->name('finance.expenses.store');
         Route::delete('/finances/expenses/{expense}', [FinanceController::class, 'destroyExpense'])->name('finance.expenses.destroy');
 
+        // Pemasukan Kas Manual (Admin & Super Admin)
+        Route::get('/finances/incomes', [FinanceController::class, 'incomes'])->name('finance.incomes');
+        Route::post('/finances/incomes', [FinanceController::class, 'storeIncome'])->name('finance.incomes.store');
+        Route::delete('/finances/incomes/{income}', [FinanceController::class, 'destroyIncome'])->name('finance.incomes.destroy');
+
         // Inventaris & Logistik Barang (Router, Alat, AP, Kabel FO, dll - Admin & Super Admin)
         Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->name('inventory.items.store');
@@ -99,10 +104,6 @@ Route::middleware('auth')->group(function () {
         // Keuangan & Analisis Laba
         Route::get('/finances', [FinanceController::class, 'index'])->name('finance.index');
         Route::get('/finances/print', [FinanceController::class, 'printReport'])->name('finance.print');
-
-        Route::get('/finances/incomes', [FinanceController::class, 'incomes'])->name('finance.incomes');
-        Route::post('/finances/incomes', [FinanceController::class, 'storeIncome'])->name('finance.incomes.store');
-        Route::delete('/finances/incomes/{income}', [FinanceController::class, 'destroyIncome'])->name('finance.incomes.destroy');
 
         // Unduh Backup Database Mandiri (Super Admin)
         Route::get('/settings/backup-database', [SettingController::class, 'downloadBackup'])->name('settings.backup_database');

@@ -13,10 +13,17 @@
             </div>
             <p class="text-xs text-slate-500 mt-1">Catat penerimaan kas dari iuran bulanan pelanggan kabel rumahan, jasa registrasi pasang baru, sewa tiang, dll.</p>
         </div>
+        @if(auth()->user()->isSuperAdmin())
         <a href="{{ route('finance.index') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors">
             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Kembali ke Buku Kas
         </a>
+        @else
+        <a href="{{ route('finance.expenses') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Ke Pengeluaran Kas
+        </a>
+        @endif
     </div>
 
     <!-- Form Tambah Pemasukan -->
@@ -164,11 +171,15 @@
                         </td>
                         <td class="py-3.5 px-5 font-mono font-extrabold text-slate-900">Rp {{ number_format($inc->amount, 0, ',', '.') }}</td>
                         <td class="py-3.5 px-5 text-right">
+                            @if(auth()->user()->isSuperAdmin() || $inc->created_by === auth()->id())
                             <form action="{{ route('finance.incomes.destroy', $inc) }}" method="POST" onsubmit="return confirm('Hapus catatan pemasukan ini?');" class="inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-rose-600 hover:text-rose-800 font-bold transition-colors">Hapus</button>
                             </form>
+                            @else
+                            <span class="text-slate-300 text-xs">-</span>
+                            @endif
                         </td>
                     </tr>
                     @empty
@@ -197,11 +208,13 @@
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">
                         {{ $inc->category }}
                     </span>
+                    @if(auth()->user()->isSuperAdmin() || $inc->created_by === auth()->id())
                     <form action="{{ route('finance.incomes.destroy', $inc) }}" method="POST" onsubmit="return confirm('Hapus catatan pemasukan ini?');" class="inline">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="text-rose-600 hover:text-rose-800 font-bold text-xs">Hapus</button>
                     </form>
+                    @endif
                 </div>
             </div>
             @empty

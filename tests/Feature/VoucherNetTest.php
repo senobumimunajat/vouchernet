@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Expense;
+use App\Models\Income;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
 use App\Models\Order;
@@ -1146,6 +1147,76 @@ class VoucherNetTest extends TestCase
 
         // Clean up
         $superExpense->delete();
+    }
+
+    public function test_admin_can_access_incomes_page_and_record_income(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+
+        // 1. Admin can access incomes page
+        $response = $this->actingAs($admin)->get(route('finance.incomes'));
+        $response->assertStatus(200);
+        $response->assertSee('Pemasukan Kas Manual', false);
+        $response->assertSee('Catat Pemasukan Baru');
+
+        // 2. Admin can record income
+        $postResponse = $this->actingAs($admin)->post(route('finance.incomes.store'), [
+            'title' => 'Iuran Pelanggan WiFi RT 04 Bpk Ahmad',
+            'category' => 'Iuran Bulanan',
+            'amount' => '150.000',
+            'income_date' => now()->format('Y-m-d'),
+            'notes' => 'Pemasukan diinput oleh admin kasir',
+        ]);
+
+        $postResponse->assertSessionHas('success');
+
+        $this->assertDatabaseHas('incomes', [
+            'title' => 'Iuran Pelanggan WiFi RT 04 Bpk Ahmad',
+            'category' => 'Iuran Bulanan',
+            'amount' => 150000,
+            'created_by' => $admin->id,
+        ]);
+    }
+
+    public function test_admin_can_delete_own_income_but_forbidden_from_deleting_others(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        $adminIncome = Income::create([
+            'income_number' => 'INC-TEST-ADMIN-' . uniqid(),
+            'title' => 'Admin Own Income',
+            'category' => 'Lain-lain',
+            'amount' => 50000,
+            'income_date' => now()->format('Y-m-d'),
+            'created_by' => $admin->id,
+        ]);
+
+        $superIncome = Income::create([
+            'income_number' => 'INC-TEST-SUPER-' . uniqid(),
+            'title' => 'Super Admin Income',
+            'category' => 'Pasang Baru',
+            'amount' => 500000,
+            'income_date' => now()->format('Y-m-d'),
+            'created_by' => $superAdmin->id,
+        ]);
+
+        // Admin attempting to delete Super Admin income -> denied
+        $failResponse = $this->actingAs($admin)->delete(route('finance.incomes.destroy', $superIncome));
+        $failResponse->assertSessionHas('error');
+        $this->assertDatabaseHas('incomes', ['id' => $superIncome->id]);
+
+        // Admin deleting their own income -> allowed
+        $successResponse = $this->actingAs($admin)->delete(route('finance.incomes.destroy', $adminIncome));
+        $successResponse->assertSessionHas('success');
+        $this->assertDatabaseMissing('incomes', ['id' => $adminIncome->id]);
+
+        // Tenant is completely forbidden from incomes
+        $tenant = User::where('role', 'tenant')->first();
+        $this->actingAs($tenant)->get(route('finance.incomes'))->assertStatus(403);
+
+        // Clean up
+        $superIncome->delete();
     }
 
     public function test_super_admin_can_download_database_backup_and_admin_is_forbidden(): void

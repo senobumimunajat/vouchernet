@@ -829,7 +829,12 @@ class FinanceController extends Controller
 
     public function destroyIncome(Income $income)
     {
-        $income->delete();
-        return back()->with('success', 'Catatan pemasukan berhasil dihapus.');
+        $user = Auth::user();
+        if ($user->isSuperAdmin() || $income->created_by === $user->id) {
+            $income->delete();
+            return back()->with('success', 'Catatan pemasukan berhasil dihapus.');
+        }
+
+        return back()->with('error', 'Hanya pembuat catatan atau Super Admin yang dapat menghapus pemasukan ini.');
     }
 }
