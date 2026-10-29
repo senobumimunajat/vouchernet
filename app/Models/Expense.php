@@ -14,6 +14,9 @@ class Expense extends Model
         'title',
         'category',
         'amount',
+        'quantity',
+        'unit',
+        'unit_price',
         'expense_date',
         'notes',
         'receipt_file',
@@ -27,6 +30,8 @@ class Expense extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'quantity' => 'integer',
+            'unit_price' => 'decimal:2',
             'expense_date' => 'date',
             'is_inventory' => 'boolean',
             'inventory_quantity' => 'integer',

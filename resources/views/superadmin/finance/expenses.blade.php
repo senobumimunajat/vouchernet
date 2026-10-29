@@ -5,6 +5,7 @@
 @section('content')
 <div class="space-y-6">
 
+    <!-- Header & Action Button -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-2.5">
@@ -13,172 +14,23 @@
             </div>
             <p class="text-xs text-slate-500 mt-1">Catat pengeluaran harian seperti bensin/transport, kertas thermal/tinta, ISP, token listrik tiang, perbaikan router, dll.</p>
         </div>
-        @if(auth()->user()->isSuperAdmin())
-        <a href="{{ route('finance.index') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors">
-            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Kembali ke Buku Kas
-        </a>
-        @else
-        <a href="{{ route('admin.orders.index') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors">
-            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Kembali ke Pesanan
-        </a>
-        @endif
-    </div>
-
-    <!-- Form Tambah Pengeluaran -->
-    <div class="bg-white p-6 sm:p-7 rounded-[28px] border border-slate-200/70 shadow-[0_4px_20px_rgb(0,0,0,0.03)] space-y-4">
-        <h2 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-            Catat Pengeluaran Baru
-        </h2>
-
-        <form action="{{ route('finance.expenses.store') }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            @csrf
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama / Keterangan</label>
-                <input type="text" name="title" required placeholder="Contoh: Tagihan ISP Biznet / Gaji Teknisi"
-                    class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-            </div>
-
-            <!-- Kategori Seamless (Pilih List ATAU Tambah Kategori Baru) -->
-            <div>
-                <div class="flex items-center justify-between mb-1.5">
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Kategori</label>
-                    <button type="button" onclick="toggleExpenseNewCategory()" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
-                        <span id="expenseToggleIcon">+</span> <span id="expenseToggleText">Kategori Baru</span>
-                    </button>
-                </div>
-
-                <!-- Dropdown Kategori Eksisting -->
-                <div id="expenseSelectBox">
-                    <select name="category" id="expenseCategorySelect" onchange="checkExpenseOption(this)" class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-                        @foreach($categories as $cat)
-                        <option value="{{ $cat }}">{{ $cat }}</option>
-                        @endforeach
-                        <option value="__NEW__" class="font-bold text-blue-600">+ Ketik Kategori Baru...</option>
-                    </select>
-                </div>
-
-                <!-- Input Kategori Baru (Muncul Seamless di Tempat yang Sama) -->
-                <div id="expenseInputBox" class="hidden">
-                    <div class="relative flex items-center">
-                        <input type="text" id="expenseNewCategoryInput" placeholder="Ketik kategori baru (mis: Gaji)..."
-                            class="w-full pl-3.5 pr-8 py-2.5 text-xs bg-blue-50/60 border border-blue-300 rounded-2xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-                        <button type="button" onclick="cancelExpenseNewCategory()" title="Batal, pilih dari list" class="absolute right-2 text-slate-400 hover:text-slate-600 p-1 text-xs font-bold">✕</button>
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nominal Biaya (Rp)</label>
-                <input type="text" inputmode="numeric" name="amount" required placeholder="Contoh: 750.000" oninput="formatRupiahInput(this)"
-                    class="rupiah-input w-full px-4 py-2.5 text-xs font-mono font-extrabold bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Bayar</label>
-                <input type="date" name="expense_date" required value="{{ date('Y-m-d') }}"
-                    class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-            </div>
-
-            <div class="sm:col-span-3">
-                <input type="text" name="notes" placeholder="Catatan tambahan opsional (nomor resi / nama toko / nomor tiang)..."
-                    class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-            </div>
-
-            <div>
-                <button type="submit" class="w-full h-full py-2.5 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all">
-                    + Simpan Pengeluaran
-                </button>
-            </div>
-
-            <!-- Checkbox Integrasi Inventory Barang -->
-            <div class="sm:col-span-4 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 space-y-3">
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
-                        <input type="checkbox" name="is_inventory" id="checkboxIsInventory" value="1" onchange="toggleInventoryFields(this.checked)"
-                            class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 transition-all">
-                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <span>📦 Masukkan Pengeluaran Ini ke Inventory Barang</span>
-                        </span>
-                    </label>
-                    <span class="text-[11px] text-slate-400">Centang jika membeli router, AP, switch, kabel FO, dll</span>
-                </div>
-
-                <!-- Sub-form Input Inventory -->
-                <div id="inventorySection" class="hidden pt-3 border-t border-slate-200/70 space-y-3">
-                    <div class="flex items-center gap-4">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pilihan:</span>
-                        <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
-                            <input type="radio" name="inventory_mode" value="existing" checked onchange="switchInventoryMode('existing')" class="text-blue-600 focus:ring-blue-500">
-                            <span>Pilih dari Daftar Inventory</span>
-                        </label>
-                        <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
-                            <input type="radio" name="inventory_mode" value="new" onchange="switchInventoryMode('new')" class="text-blue-600 focus:ring-blue-500">
-                            <span>+ Buat Barang Baru</span>
-                        </label>
-                    </div>
-
-                    <!-- Mode 1: Pilih Barang yang sudah ada -->
-                    <div id="existingInventoryBox" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="sm:col-span-2">
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Barang Inventory</label>
-                            <select name="inventory_item_id" id="inventory_item_id" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">-- Pilih Barang dari Inventory --</option>
-                                @foreach($inventoryItems as $inv)
-                                <option value="{{ $inv->id }}">{{ $inv->name }} (Sisa stok: {{ $inv->stock }} {{ $inv->unit }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Jumlah Unit (Qty)</label>
-                            <input type="number" name="inventory_quantity" id="inventory_quantity" value="1" min="1" max="10000"
-                                class="w-full px-3.5 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-
-                    <!-- Mode 2: Buat Master Barang Baru -->
-                    <div id="newInventoryBox" class="hidden grid grid-cols-1 sm:grid-cols-4 gap-3">
-                        <div class="sm:col-span-2">
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Nama Barang Baru</label>
-                            <input type="text" name="new_item_name" id="new_item_name" placeholder="Misal: Router MikroTik RB750Gr3"
-                                class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Kategori Barang</label>
-                            <select name="new_item_category" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="Router & Gateway">Router & Gateway</option>
-                                <option value="Access Point / WiFi">Access Point / WiFi</option>
-                                <option value="Switch & Hub">Switch & Hub</option>
-                                <option value="Kabel & Fiber Optic">Kabel & Fiber Optic</option>
-                                <option value="Konverter & SFP">Konverter & SFP</option>
-                                <option value="Power & Adaptor">Power & Adaptor</option>
-                                <option value="Alat & Tang Crimping">Alat & Tang Crimping</option>
-                                <option value="Aksesoris & Konektor">Aksesoris & Konektor</option>
-                                <option value="Lain-lain">Lain-lain</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Satuan</label>
-                            <select name="new_item_unit" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="unit">unit</option>
-                                <option value="pcs">pcs</option>
-                                <option value="meter">meter</option>
-                                <option value="roll">roll</option>
-                                <option value="set">set</option>
-                                <option value="pack">pack</option>
-                            </select>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Lokasi Penyimpanan</label>
-                            <input type="text" name="inventory_location" placeholder="Gudang (Bawaan jika kosong)"
-                                class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </form>
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <button type="button" onclick="openExpenseModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold shadow-sm shadow-blue-500/20 active:scale-[0.98] transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                + Catat Pengeluaran
+            </button>
+            @if(auth()->user()->isSuperAdmin())
+            <a href="{{ route('finance.index') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Kembali ke Buku Kas
+            </a>
+            @else
+            <a href="{{ route('admin.orders.index') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Kembali ke Pesanan
+            </a>
+            @endif
+        </div>
     </div>
 
     <!-- Filter Riwayat Pengeluaran -->
@@ -273,7 +125,14 @@
                                 {{ $exp->creator->name ?? 'Admin' }}
                             </span>
                         </td>
-                        <td class="py-3.5 px-5 font-mono font-extrabold text-rose-600">Rp {{ number_format($exp->amount, 0, ',', '.') }}</td>
+                        <td class="py-3.5 px-5 font-mono font-extrabold text-rose-600">
+                            <div>Rp {{ number_format($exp->amount, 0, ',', '.') }}</div>
+                            @if($exp->quantity > 1 || ($exp->unit_price && $exp->unit_price > 0 && round($exp->unit_price) != round($exp->amount)))
+                            <span class="text-[10px] text-slate-400 font-mono font-normal block">
+                                {{ number_format($exp->quantity) }} {{ $exp->unit ?: 'unit' }} @ Rp {{ number_format($exp->unit_price ?: ($exp->amount / max(1, $exp->quantity)), 0, ',', '.') }}
+                            </span>
+                            @endif
+                        </td>
                         <td class="py-3.5 px-5 text-right">
                             @if(auth()->user()->isSuperAdmin() || $exp->created_by === auth()->id())
                             <form action="{{ route('finance.expenses.destroy', $exp) }}" method="POST" onsubmit="return confirm('Hapus catatan pengeluaran ini?');" class="inline">
@@ -313,9 +172,16 @@
                         </a>
                         @endif
                     </div>
-                    <span class="font-mono font-extrabold text-rose-600 text-sm block">
-                        -Rp {{ number_format($exp->amount, 0, ',', '.') }}
-                    </span>
+                    <div class="text-right">
+                        <span class="font-mono font-extrabold text-rose-600 text-sm block">
+                            -Rp {{ number_format($exp->amount, 0, ',', '.') }}
+                        </span>
+                        @if($exp->quantity > 1 || ($exp->unit_price && $exp->unit_price > 0 && round($exp->unit_price) != round($exp->amount)))
+                        <span class="text-[10px] text-slate-400 font-mono block">
+                            {{ number_format($exp->quantity) }} {{ $exp->unit ?: 'unit' }} @ Rp {{ number_format($exp->unit_price ?: ($exp->amount / max(1, $exp->quantity)), 0, ',', '.') }}
+                        </span>
+                        @endif
+                    </div>
                 </div>
                 <div class="flex items-center justify-between text-xs pt-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
@@ -347,7 +213,347 @@
 
 </div>
 
+<!-- Modal Catat Pengeluaran Baru -->
+<div id="expenseModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6" aria-modal="true" role="dialog">
+    <div class="relative w-full max-w-2xl bg-white rounded-[28px] shadow-2xl border border-slate-200/80 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+        <!-- Modal Header -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg font-bold border border-rose-100 shrink-0">
+                    💸
+                </div>
+                <div>
+                    <h2 class="text-sm sm:text-base font-extrabold text-slate-900">Catat Pengeluaran Baru</h2>
+                    <p class="text-[11px] text-slate-500">Input harga satuan & jumlah unit, total otomatis dikalikan</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeExpenseModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold transition-colors">
+                ✕
+            </button>
+        </div>
+
+        <!-- Modal Form -->
+        <form action="{{ route('finance.expenses.store') }}" method="POST" enctype="multipart/form-data" id="expenseForm" class="p-6 space-y-4">
+            @csrf
+            
+            <!-- 1. Keterangan & Kategori -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama / Keterangan <span class="text-rose-500">*</span></label>
+                    <input type="text" name="title" id="expenseTitle" required placeholder="Contoh: Tagihan ISP Biznet / Router MikroTik" value="{{ old('title') }}"
+                        class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+
+                <!-- Kategori Seamless -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Kategori <span class="text-rose-500">*</span></label>
+                        <button type="button" onclick="toggleExpenseNewCategory()" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
+                            <span id="expenseToggleIcon">+</span> <span id="expenseToggleText">Kategori Baru</span>
+                        </button>
+                    </div>
+                    <div id="expenseSelectBox">
+                        <select name="category" id="expenseCategorySelect" onchange="checkExpenseOption(this)" class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                            @foreach($categories as $cat)
+                            <option value="{{ $cat }}" {{ old('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                            @endforeach
+                            <option value="__NEW__" class="font-bold text-blue-600">+ Ketik Kategori Baru...</option>
+                        </select>
+                    </div>
+                    <div id="expenseInputBox" class="hidden">
+                        <div class="relative flex items-center">
+                            <input type="text" id="expenseNewCategoryInput" placeholder="Ketik kategori baru (mis: Gaji)..."
+                                class="w-full pl-3.5 pr-8 py-2.5 text-xs bg-blue-50/60 border border-blue-300 rounded-2xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                            <button type="button" onclick="cancelExpenseNewCategory()" title="Batal, pilih dari list" class="absolute right-2 text-slate-400 hover:text-slate-600 p-1 text-xs font-bold">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Kalkulasi Otomatis (Jumlah x Harga Satuan = Total Biaya) -->
+            <div class="bg-gradient-to-br from-slate-50 to-blue-50/30 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🧮 Rincian Biaya & Jumlah</span>
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-medium">Total otomatis dikalikan</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    <!-- Qty -->
+                    <div class="sm:col-span-3">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Jumlah</label>
+                        <input type="number" name="quantity" id="expenseQty" min="1" max="100000" value="{{ old('quantity', 1) }}" oninput="calculateExpenseTotal()"
+                            class="w-full px-3.5 py-2.5 text-xs font-mono font-extrabold text-center bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Satuan -->
+                    <div class="sm:col-span-3">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Satuan</label>
+                        <select name="unit" id="expenseUnit" onchange="calculateExpenseTotal()" class="w-full px-3 py-2.5 text-xs font-semibold bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            @foreach(['unit', 'pcs', 'liter', 'meter', 'roll', 'porsi', 'bulan', 'set', 'pack'] as $u)
+                            <option value="{{ $u }}" {{ old('unit', 'unit') == $u ? 'selected' : '' }}>{{ $u }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Harga Satuan -->
+                    <div class="sm:col-span-6">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Harga Satuan (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                            <input type="text" inputmode="numeric" name="unit_price" id="expenseUnitPrice" value="{{ old('unit_price') }}" placeholder="Contoh: 250.000" oninput="formatRupiahInput(this); calculateExpenseTotal();"
+                                class="rupiah-input w-full pl-10 pr-3.5 py-2.5 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Highlight Total Biaya -->
+                <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Total Pengeluaran Kas (Rp)</span>
+                        <span id="expenseFormulaPreview" class="text-[11px] text-slate-400 font-mono">1 unit × Rp 0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-mono font-extrabold text-rose-500">Rp</span>
+                        <input type="text" inputmode="numeric" name="amount" id="expenseAmount" required value="{{ old('amount') }}" placeholder="0" oninput="formatRupiahInput(this); handleManualAmountChange();"
+                            class="rupiah-input w-40 px-3 py-1.5 text-sm sm:text-base font-mono font-black text-right text-rose-600 bg-white border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-xs">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Tanggal & Catatan -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Bayar <span class="text-rose-500">*</span></label>
+                    <input type="date" name="expense_date" required value="{{ old('expense_date', date('Y-m-d')) }}"
+                        class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Catatan Tambahan (Opsional)</label>
+                    <input type="text" name="notes" placeholder="Resi / nama toko / nomor tiang..." value="{{ old('notes') }}"
+                        class="w-full px-4 py-2.5 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                </div>
+            </div>
+
+            <!-- 4. Checkbox Integrasi Inventory Barang -->
+            <div class="bg-slate-50/90 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                        <input type="checkbox" name="is_inventory" id="checkboxIsInventory" value="1" {{ old('is_inventory') ? 'checked' : '' }} onchange="toggleInventoryFields(this.checked)"
+                            class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 transition-all">
+                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span>📦 Masukkan Pengeluaran Ini ke Inventory Barang</span>
+                        </span>
+                    </label>
+                    <span class="text-[11px] text-slate-400">Centang jika membeli router, AP, switch, kabel FO, dll</span>
+                </div>
+
+                <!-- Sub-form Input Inventory -->
+                <div id="inventorySection" class="{{ old('is_inventory') ? '' : 'hidden' }} pt-3 border-t border-slate-200/70 space-y-3">
+                    <div class="flex items-center gap-4">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pilihan:</span>
+                        <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                            <input type="radio" name="inventory_mode" value="existing" {{ old('inventory_mode', 'existing') === 'existing' ? 'checked' : '' }} onchange="switchInventoryMode('existing')" class="text-blue-600 focus:ring-blue-500">
+                            <span>Pilih dari Daftar Inventory</span>
+                        </label>
+                        <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                            <input type="radio" name="inventory_mode" value="new" {{ old('inventory_mode') === 'new' ? 'checked' : '' }} onchange="switchInventoryMode('new')" class="text-blue-600 focus:ring-blue-500">
+                            <span>+ Buat Barang Baru</span>
+                        </label>
+                    </div>
+
+                    <!-- Mode 1: Pilih Barang yang sudah ada -->
+                    <div id="existingInventoryBox" class="{{ old('inventory_mode', 'existing') === 'existing' ? '' : 'hidden' }} space-y-2">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">Barang Inventory</label>
+                        <select name="inventory_item_id" id="inventory_item_id" onchange="handleSelectExistingItem(this)" class="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">-- Pilih Barang dari Inventory --</option>
+                            @foreach($inventoryItems as $inv)
+                            <option value="{{ $inv->id }}" data-unit="{{ $inv->unit }}" data-stock="{{ $inv->stock }}" data-price="{{ $inv->unit_price }}" {{ old('inventory_item_id') == $inv->id ? 'selected' : '' }}>
+                                {{ $inv->name }} (Sisa stok: {{ $inv->stock }} {{ $inv->unit }})
+                            </option>
+                            @endforeach
+                        </select>
+                        <p id="existingItemStockHint" class="text-[11px] text-blue-600 font-medium hidden">
+                            ℹ️ Stok barang ini akan otomatis bertambah sesuai Jumlah yang Anda input di atas.
+                        </p>
+                    </div>
+
+                    <!-- Mode 2: Buat Master Barang Baru -->
+                    <div id="newInventoryBox" class="{{ old('inventory_mode') === 'new' ? '' : 'hidden' }} grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Nama Barang Baru</label>
+                            <input type="text" name="new_item_name" id="new_item_name" placeholder="Misal: Router MikroTik RB750Gr3" value="{{ old('new_item_name') }}"
+                                class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Kategori Barang</label>
+                            <select name="new_item_category" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Router & Gateway">Router & Gateway</option>
+                                <option value="Access Point / WiFi">Access Point / WiFi</option>
+                                <option value="Switch & Hub">Switch & Hub</option>
+                                <option value="Kabel & Fiber Optic">Kabel & Fiber Optic</option>
+                                <option value="Konverter & SFP">Konverter & SFP</option>
+                                <option value="Power & Adaptor">Power & Adaptor</option>
+                                <option value="Alat & Tang Crimping">Alat & Tang Crimping</option>
+                                <option value="Aksesoris & Konektor">Aksesoris & Konektor</option>
+                                <option value="Lain-lain">Lain-lain</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Lokasi Penyimpanan</label>
+                            <input type="text" name="inventory_location" placeholder="Gudang (Bawaan jika kosong)" value="{{ old('inventory_location') }}"
+                                class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeExpenseModal()" class="px-5 py-2.5 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                    Batal
+                </button>
+                <button type="submit" id="btnSubmitExpense" class="px-6 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all">
+                    + Simpan Pengeluaran
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    function openExpenseModal() {
+        const modal = document.getElementById('expenseModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            const titleInput = document.getElementById('expenseTitle');
+            if (titleInput) {
+                setTimeout(() => titleInput.focus(), 50);
+            }
+            calculateExpenseTotal();
+        }
+    }
+
+    function closeExpenseModal() {
+        const modal = document.getElementById('expenseModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeExpenseModal();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('expenseModal');
+        if (modal && e.target === modal) {
+            closeExpenseModal();
+        }
+    });
+
+    function parseRupiahNumber(val) {
+        if (!val) return 0;
+        const clean = val.toString().replace(/[^0-9]/g, '');
+        return clean ? parseInt(clean, 10) : 0;
+    }
+
+    function formatNumberToRupiah(num) {
+        return new Intl.NumberFormat('id-ID').format(num);
+    }
+
+    function calculateExpenseTotal() {
+        const qtyInput = document.getElementById('expenseQty');
+        const unitPriceInput = document.getElementById('expenseUnitPrice');
+        const amountInput = document.getElementById('expenseAmount');
+        const preview = document.getElementById('expenseFormulaPreview');
+        const unitSelect = document.getElementById('expenseUnit');
+        const submitBtn = document.getElementById('btnSubmitExpense');
+
+        const qty = Math.max(1, parseInt(qtyInput ? qtyInput.value : 1) || 1);
+        const unit = unitSelect ? unitSelect.value : 'unit';
+        const unitPrice = parseRupiahNumber(unitPriceInput ? unitPriceInput.value : '');
+
+        if (unitPrice > 0) {
+            const total = qty * unitPrice;
+            if (amountInput) {
+                amountInput.value = formatNumberToRupiah(total);
+            }
+            if (preview) {
+                preview.innerText = `${qty} ${unit} × Rp ${formatNumberToRupiah(unitPrice)}`;
+            }
+            if (submitBtn) {
+                submitBtn.innerText = `+ Simpan Pengeluaran (Rp ${formatNumberToRupiah(total)})`;
+            }
+        } else {
+            const total = parseRupiahNumber(amountInput ? amountInput.value : '');
+            if (preview) {
+                preview.innerText = total > 0 ? `Total: Rp ${formatNumberToRupiah(total)}` : `${qty} ${unit} × Rp 0`;
+            }
+            if (submitBtn) {
+                submitBtn.innerText = total > 0 ? `+ Simpan Pengeluaran (Rp ${formatNumberToRupiah(total)})` : '+ Simpan Pengeluaran';
+            }
+        }
+    }
+
+    function handleManualAmountChange() {
+        const qtyInput = document.getElementById('expenseQty');
+        const unitPriceInput = document.getElementById('expenseUnitPrice');
+        const amountInput = document.getElementById('expenseAmount');
+        const preview = document.getElementById('expenseFormulaPreview');
+        const submitBtn = document.getElementById('btnSubmitExpense');
+        const unitSelect = document.getElementById('expenseUnit');
+
+        const total = parseRupiahNumber(amountInput ? amountInput.value : '');
+        const qty = Math.max(1, parseInt(qtyInput ? qtyInput.value : 1) || 1);
+        const unit = unitSelect ? unitSelect.value : 'unit';
+
+        if (total > 0 && (!unitPriceInput.value || parseRupiahNumber(unitPriceInput.value) === 0)) {
+            const unitPrice = Math.round(total / qty);
+            unitPriceInput.value = formatNumberToRupiah(unitPrice);
+            if (preview) {
+                preview.innerText = `${qty} ${unit} × Rp ${formatNumberToRupiah(unitPrice)}`;
+            }
+        }
+        if (submitBtn) {
+            submitBtn.innerText = total > 0 ? `+ Simpan Pengeluaran (Rp ${formatNumberToRupiah(total)})` : '+ Simpan Pengeluaran';
+        }
+    }
+
+    function handleSelectExistingItem(select) {
+        const opt = select.selectedOptions[0];
+        const hint = document.getElementById('existingItemStockHint');
+        const unitSelect = document.getElementById('expenseUnit');
+        const unitPriceInput = document.getElementById('expenseUnitPrice');
+        const titleInput = document.getElementById('expenseTitle');
+
+        if (opt && opt.value) {
+            if (hint) {
+                hint.classList.remove('hidden');
+                hint.innerHTML = `ℹ️ Barang <strong>${opt.text}</strong> dipilih. Stok akan otomatis bertambah ke gudang.`;
+            }
+            if (unitSelect && opt.dataset.unit) {
+                unitSelect.value = opt.dataset.unit;
+            }
+            if (unitPriceInput && (!unitPriceInput.value || parseRupiahNumber(unitPriceInput.value) === 0)) {
+                if (opt.dataset.price && parseFloat(opt.dataset.price) > 0) {
+                    unitPriceInput.value = formatNumberToRupiah(Math.round(parseFloat(opt.dataset.price)));
+                }
+            }
+            if (titleInput && !titleInput.value) {
+                titleInput.value = opt.text.split('(')[0].trim();
+            }
+            calculateExpenseTotal();
+        } else {
+            if (hint) hint.classList.add('hidden');
+        }
+    }
+
     function checkExpenseOption(select) {
         if (select.value === '__NEW__') {
             showExpenseNewCategory();
@@ -395,6 +601,11 @@
         const section = document.getElementById('inventorySection');
         if (checked) {
             section.classList.remove('hidden');
+            const titleInput = document.getElementById('expenseTitle');
+            const newItemInput = document.getElementById('new_item_name');
+            if (newItemInput && !newItemInput.value && titleInput && titleInput.value) {
+                newItemInput.value = titleInput.value;
+            }
         } else {
             section.classList.add('hidden');
         }
@@ -406,10 +617,23 @@
         if (mode === 'new') {
             existingBox.classList.add('hidden');
             newBox.classList.remove('hidden');
+            const titleInput = document.getElementById('expenseTitle');
+            const newItemInput = document.getElementById('new_item_name');
+            if (newItemInput && !newItemInput.value && titleInput && titleInput.value) {
+                newItemInput.value = titleInput.value;
+            }
         } else {
             newBox.classList.add('hidden');
             existingBox.classList.remove('hidden');
         }
     }
 </script>
+
+@if($errors->any() || old('title'))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        openExpenseModal();
+    });
+</script>
+@endif
 @endsection

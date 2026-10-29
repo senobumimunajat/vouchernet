@@ -1117,7 +1117,7 @@ class VoucherNetTest extends TestCase
         $superAdmin = User::where('role', 'super_admin')->first();
 
         $adminExpense = Expense::create([
-            'expense_number' => 'EXP-TEST-ADMIN',
+            'expense_number' => 'EXP-TEST-ADMIN-' . uniqid(),
             'title' => 'Admin Own Expense',
             'category' => 'Operasional & Konsumsi',
             'amount' => 20000,
@@ -1126,7 +1126,7 @@ class VoucherNetTest extends TestCase
         ]);
 
         $superExpense = Expense::create([
-            'expense_number' => 'EXP-TEST-SUPER',
+            'expense_number' => 'EXP-TEST-SUPER-' . uniqid(),
             'title' => 'Super Admin ISP Bill',
             'category' => 'ISP Bandwidth',
             'amount' => 1500000,
@@ -1722,6 +1722,44 @@ class VoucherNetTest extends TestCase
         $admin = User::where('role', 'admin')->first();
         $adminCancelResp = $this->actingAs($admin)->delete(route('inventory.movements.destroy', $movement));
         $adminCancelResp->assertStatus(403);
+    }
+
+    public function test_expense_with_quantity_and_unit_price_auto_multiplies_and_displays_properly(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+        $item = InventoryItem::first();
+        $initialStock = $item->stock;
+
+        // Post expense with qty 4, unit_price 250.000 (total auto-calculated = 1.000.000)
+        $resp = $this->actingAs($superAdmin)->post(route('finance.expenses.store'), [
+            'title' => 'Pengadaan AP Indoor Multi Unit',
+            'category' => 'Perangkat / Router / AP',
+            'quantity' => 4,
+            'unit' => 'unit',
+            'unit_price' => '250.000',
+            'amount' => '1.000.000',
+            'expense_date' => date('Y-m-d'),
+            'is_inventory' => 1,
+            'inventory_mode' => 'existing',
+            'inventory_item_id' => $item->id,
+        ]);
+
+        $resp->assertSessionHas('success');
+        $item->refresh();
+        $this->assertEquals($initialStock + 4, $item->stock);
+
+        $expense = Expense::latest('id')->first();
+        $this->assertEquals(4, $expense->quantity);
+        $this->assertEquals(250000, (float) $expense->unit_price);
+        $this->assertEquals(1000000, (float) $expense->amount);
+
+        // Check index view displays quantity and unit price breakdown
+        $viewResp = $this->actingAs($superAdmin)->get(route('finance.expenses'));
+        $viewResp->assertSee('4 unit @ Rp 250.000');
+
+        // Cleanup
+        $expense->delete();
+        $item->update(['stock' => $initialStock]);
     }
 }
 

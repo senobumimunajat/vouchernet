@@ -592,9 +592,15 @@ class FinanceController extends Controller
 
     public function storeExpense(Request $request)
     {
+        // Sanitize rupiah formatted inputs
         if ($request->filled('amount')) {
             $request->merge([
                 'amount' => str_replace(['.', ','], '', (string) $request->input('amount')),
+            ]);
+        }
+        if ($request->filled('unit_price')) {
+            $request->merge([
+                'unit_price' => str_replace(['.', ','], '', (string) $request->input('unit_price')),
             ]);
         }
         if ($request->filled('category')) {
@@ -603,9 +609,21 @@ class FinanceController extends Controller
             ]);
         }
 
+        // Auto-calculate amount if unit_price and quantity provided
+        $qty = max(1, (int) ($request->input('quantity') ?: $request->input('inventory_quantity', 1)));
+        $unitPrice = $request->filled('unit_price') ? (float) $request->input('unit_price') : null;
+        if ($unitPrice !== null && (!$request->filled('amount') || (float) $request->input('amount') <= 0)) {
+            $request->merge(['amount' => $qty * $unitPrice]);
+        } elseif ($request->filled('amount') && $unitPrice === null) {
+            $unitPrice = round((float) $request->input('amount') / $qty, 2);
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:150'],
             'category' => ['required', 'string'],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'unit' => ['nullable', 'string', 'max:30'],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
             'amount' => ['required', 'numeric', 'min:1'],
             'expense_date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -628,11 +646,16 @@ class FinanceController extends Controller
         $expenseNumber = 'EXP-' . date('Ymd') . '-' . strtoupper(Str::random(4));
         $isInventory = $request->boolean('is_inventory');
         $inventoryMode = $request->input('inventory_mode', 'existing');
-        $inventoryQty = max(1, (int) $request->input('inventory_quantity', 1));
+        $quantity = max(1, (int) ($validated['quantity'] ?? $validated['inventory_quantity'] ?? 1));
+        $unit = !empty($validated['unit']) ? $validated['unit'] : (!empty($validated['new_item_unit']) ? $validated['new_item_unit'] : 'unit');
+        $unitPrice = isset($validated['unit_price']) && (float) $validated['unit_price'] > 0
+            ? (float) $validated['unit_price']
+            : round((float) $validated['amount'] / $quantity, 2);
+
         $inventoryItemId = $request->input('inventory_item_id');
         $newItemName = trim((string) $request->input('new_item_name'));
         $newItemCategory = trim((string) $request->input('new_item_category'));
-        $newItemUnit = trim((string) $request->input('new_item_unit', 'unit'));
+        $newItemUnit = trim((string) ($request->input('new_item_unit') ?: $unit));
         $inventoryLocation = trim((string) $request->input('inventory_location'));
 
         DB::transaction(function () use (
@@ -641,7 +664,9 @@ class FinanceController extends Controller
             $expenseNumber,
             $isInventory,
             $inventoryMode,
-            $inventoryQty,
+            $quantity,
+            $unit,
+            $unitPrice,
             $inventoryItemId,
             $newItemName,
             $newItemCategory,
@@ -651,23 +676,26 @@ class FinanceController extends Controller
             $targetItem = null;
 
             if ($isInventory) {
-                if ($inventoryMode === 'new' && !empty($newItemName)) {
+                if ($inventoryMode === 'new' && (!empty($newItemName) || !empty($validated['title']))) {
                     $itemCategory = !empty($newItemCategory) ? $newItemCategory : 'Router & Gateway';
-                    $itemUnit = !empty($newItemUnit) ? $newItemUnit : 'unit';
+                    $finalItemName = !empty($newItemName) ? $newItemName : $validated['title'];
                     $targetItem = InventoryItem::create([
                         'item_code' => InventoryItem::generateCode($itemCategory),
-                        'name' => $newItemName,
+                        'name' => $finalItemName,
                         'category' => $itemCategory,
-                        'unit' => $itemUnit,
+                        'unit' => $newItemUnit ?: 'unit',
                         'stock' => 0,
                         'min_stock' => 2,
-                        'unit_price' => round((float) $validated['amount'] / $inventoryQty, 2),
+                        'unit_price' => $unitPrice,
                         'location' => $inventoryLocation ?: 'Gudang',
                         'description' => 'Didaftarkan otomatis dari Pengeluaran ' . $expenseNumber,
                         'is_active' => true,
                     ]);
                 } elseif (!empty($inventoryItemId)) {
                     $targetItem = InventoryItem::find($inventoryItemId);
+                    if ($targetItem && $unitPrice > 0) {
+                        $targetItem->update(['unit_price' => $unitPrice]);
+                    }
                 }
             }
 
@@ -676,18 +704,21 @@ class FinanceController extends Controller
                 'title' => $validated['title'],
                 'category' => $validated['category'],
                 'amount' => $validated['amount'],
+                'quantity' => $quantity,
+                'unit' => $targetItem ? $targetItem->unit : $unit,
+                'unit_price' => $unitPrice,
                 'expense_date' => $validated['expense_date'],
                 'notes' => $validated['notes'] ?? null,
                 'receipt_file' => $receiptPath,
                 'is_inventory' => $targetItem ? true : false,
                 'inventory_item_id' => $targetItem?->id,
-                'inventory_quantity' => $targetItem ? $inventoryQty : null,
+                'inventory_quantity' => $targetItem ? $quantity : null,
                 'created_by' => Auth::id(),
             ]);
 
             if ($targetItem) {
                 $targetItem->addStock(
-                    $inventoryQty,
+                    $quantity,
                     "Pembelian Kas: {$validated['title']} ({$expenseNumber})",
                     $inventoryLocation ?: ($targetItem->location ?: 'Gudang'),
                     $expense->id,
