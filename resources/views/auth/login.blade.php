@@ -56,34 +56,7 @@
                     Masuk ke Akun
                 </button>
             </form>
-
-            @if(app()->isLocal() && in_array(request()->getHost(), ['localhost', '127.0.0.1']))
-            <!-- Quick Demo Credentials Box (Hanya muncul saat dibuka di localhost komputer dev) -->
-            <div class="mt-8 pt-6 border-t border-slate-100">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3 text-center">Login Cepat Dev (Local Only)</p>
-                <div class="grid grid-cols-3 gap-2">
-                    <button type="button" onclick="fillLogin('superadmin', 'password')" class="text-xs py-2 px-2.5 text-center font-bold rounded-full bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200/80 transition-all active:scale-95">
-                        Super Admin
-                    </button>
-                    <button type="button" onclick="fillLogin('admin', 'password')" class="text-xs py-2 px-2.5 text-center font-bold rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200/80 transition-all active:scale-95">
-                        Admin
-                    </button>
-                    <button type="button" onclick="fillLogin('warung_siti', 'password')" class="text-xs py-2 px-2.5 text-center font-bold rounded-full bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200/80 transition-all active:scale-95">
-                        Warung Siti
-                    </button>
-                </div>
-            </div>
-            @endif
         </div>
     </div>
 </div>
-
-@if(app()->isLocal() && in_array(request()->getHost(), ['localhost', '127.0.0.1']))
-<script>
-    function fillLogin(username, password) {
-        document.getElementById('username').value = username;
-        document.getElementById('password').value = password;
-    }
-</script>
-@endif
 @endsection
