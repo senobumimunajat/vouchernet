@@ -17,18 +17,8 @@
             </p>
         </div>
 
-        <!-- Quick Action Buttons (Touch-Friendly) -->
-        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <button type="button" onclick="openStockOutModal()" class="flex-1 sm:flex-none py-2.5 px-3.5 rounded-2xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/80 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 touch-target">
-                <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/></svg>
-                <span>Catat Barang Keluar</span>
-            </button>
-
-            <button type="button" onclick="openStockInModal()" class="flex-1 sm:flex-none py-2.5 px-3.5 rounded-2xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 touch-target">
-                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3"/></svg>
-                <span>Catat Barang Masuk</span>
-            </button>
-
+        <!-- Header Action Button -->
+        <div>
             <button type="button" onclick="openCreateItemModal()" class="w-full sm:w-auto py-2.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm shadow-blue-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-target">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 <span>Tambah Master Barang</span>
@@ -257,8 +247,10 @@
                                 <span>📍</span>
                                 <span class="font-semibold text-slate-700">{{ $item->location ?: 'Gudang Posko' }}</span>
                             </span>
+                            @if($item->min_stock > 0)
                             <span class="text-slate-300">•</span>
                             <span class="text-[11px] text-slate-400">Min: <strong class="text-slate-600 font-mono">{{ $item->min_stock }} {{ $item->unit }}</strong></span>
+                            @endif
                         </div>
 
                         @if($item->description)
@@ -678,30 +670,27 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Stok Awal Fisik</label>
-                    <input type="number" name="initial_stock" value="0" min="0" max="10000"
+                    <input type="number" name="initial_stock" value="0" min="0" max="100000" placeholder="0"
                         class="w-full px-4 py-2.5 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Boleh 0 jika stok barang belum ada di posko.</span>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Batas Minimum</label>
-                    <input type="number" name="min_stock" value="2" min="0" max="1000" required
-                        class="w-full px-4 py-2.5 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Harga Satuan (Rp)</label>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Harga Beli Satuan (Opsional)</label>
                     <input type="text" name="unit_price" placeholder="Misal: 750.000" oninput="formatRupiahInput(this)"
                         class="rupiah-input w-full px-4 py-2.5 text-xs font-mono font-bold bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Taksiran nilai aset pengadaan barang.</span>
                 </div>
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Lokasi Penyimpanan</label>
-                <input type="text" name="location" placeholder="Misal: Gudang Posko RT / Rak Server"
+                <input type="text" name="location" placeholder="Gudang Posko (Bawaan otomatis jika kosong)"
                     class="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                <span class="text-[10px] text-slate-400 mt-1 block">Jika kosong, langsung terdeteksi berada di <strong>Gudang Posko</strong>.</span>
             </div>
 
             <div>

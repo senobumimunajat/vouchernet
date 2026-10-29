@@ -54,7 +54,7 @@ class InventoryItem extends Model
 
     public function isLowStock(): bool
     {
-        return $this->stock <= $this->min_stock;
+        return $this->min_stock > 0 && $this->stock <= $this->min_stock && $this->stock > 0;
     }
 
     public static function generateCode(string $category = 'Umum'): string

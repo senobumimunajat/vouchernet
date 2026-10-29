@@ -179,9 +179,9 @@ class InventoryController extends Controller
                 'category' => $validated['category'],
                 'unit' => $validated['unit'],
                 'stock' => 0,
-                'min_stock' => (int) ($validated['min_stock'] ?? 2),
+                'min_stock' => (int) ($validated['min_stock'] ?? 0),
                 'unit_price' => !empty($validated['unit_price']) ? (float) $validated['unit_price'] : null,
-                'location' => $validated['location'] ?? null,
+                'location' => !empty($validated['location']) ? trim($validated['location']) : 'Gudang Posko',
                 'description' => $validated['description'] ?? null,
                 'photo' => $photoPath,
                 'is_active' => true,
@@ -191,7 +191,7 @@ class InventoryController extends Controller
                 $item->addStock(
                     $initialStock,
                     'Stok Awal Pendaftaran Barang',
-                    $item->location ?? 'Gudang Utama',
+                    $item->location ?? 'Gudang Posko',
                     null,
                     'Input saldo awal inventaris baru',
                     Auth::id()
@@ -247,7 +247,7 @@ class InventoryController extends Controller
             'unit' => $validated['unit'],
             'min_stock' => (int) $validated['min_stock'],
             'unit_price' => !empty($validated['unit_price']) ? (float) $validated['unit_price'] : null,
-            'location' => $validated['location'] ?? null,
+            'location' => !empty($validated['location']) ? trim($validated['location']) : 'Gudang Posko',
             'description' => $validated['description'] ?? null,
             'is_active' => $request->has('is_active') ? (bool) $request->is_active : true,
         ]);

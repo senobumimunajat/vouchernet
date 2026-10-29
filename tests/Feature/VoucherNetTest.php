@@ -1430,6 +1430,23 @@ class VoucherNetTest extends TestCase
         // Tenant forbidden
         $respTenant = $this->actingAs($tenant)->get(route('inventory.index'));
         $respTenant->assertStatus(403);
+
+        // Test creating item with empty location and initial_stock 0 defaults to Gudang Posko and 0 min_stock
+        $testUniqueName = 'Switch Hub Posko Test ' . rand(1000, 9999);
+        $respCreate = $this->actingAs($superAdmin)->post(route('inventory.items.store'), [
+            'name' => $testUniqueName,
+            'category' => 'Switch & Hub',
+            'unit' => 'unit',
+            'initial_stock' => 0,
+            'location' => '', // empty
+        ]);
+        $respCreate->assertSessionHas('success');
+        $created = InventoryItem::where('name', $testUniqueName)->first();
+        $this->assertNotNull($created);
+        $this->assertEquals('Gudang Posko', $created->location);
+        $this->assertEquals(0, $created->stock);
+        $this->assertEquals(0, $created->min_stock);
+        $created->delete();
     }
 
     public function test_admin_and_super_admin_can_record_stock_out_and_stock_is_deducted(): void
