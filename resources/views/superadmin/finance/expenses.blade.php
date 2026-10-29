@@ -92,6 +92,92 @@
                     + Simpan Pengeluaran
                 </button>
             </div>
+
+            <!-- Checkbox Integrasi Inventory Barang -->
+            <div class="sm:col-span-4 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 space-y-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
+                        <input type="checkbox" name="is_inventory" id="checkboxIsInventory" value="1" onchange="toggleInventoryFields(this.checked)"
+                            class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 transition-all">
+                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <span>📦 Masukkan Pengeluaran Ini ke Inventory Barang</span>
+                        </span>
+                    </label>
+                    <span class="text-[11px] text-slate-400">Centang jika membeli router, AP, switch, kabel FO, dll</span>
+                </div>
+
+                <!-- Sub-form Input Inventory -->
+                <div id="inventorySection" class="hidden pt-3 border-t border-slate-200/70 space-y-3">
+                    <div class="flex items-center gap-4">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pilihan:</span>
+                        <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                            <input type="radio" name="inventory_mode" value="existing" checked onchange="switchInventoryMode('existing')" class="text-blue-600 focus:ring-blue-500">
+                            <span>Pilih dari Daftar Inventory</span>
+                        </label>
+                        <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                            <input type="radio" name="inventory_mode" value="new" onchange="switchInventoryMode('new')" class="text-blue-600 focus:ring-blue-500">
+                            <span>+ Buat Barang Baru</span>
+                        </label>
+                    </div>
+
+                    <!-- Mode 1: Pilih Barang yang sudah ada -->
+                    <div id="existingInventoryBox" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Barang Inventory</label>
+                            <select name="inventory_item_id" id="inventory_item_id" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Pilih Barang dari Inventory --</option>
+                                @foreach($inventoryItems as $inv)
+                                <option value="{{ $inv->id }}">{{ $inv->name }} (Sisa stok: {{ $inv->stock }} {{ $inv->unit }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Jumlah Unit (Qty)</label>
+                            <input type="number" name="inventory_quantity" id="inventory_quantity" value="1" min="1" max="10000"
+                                class="w-full px-3.5 py-2 text-xs font-mono font-bold bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Mode 2: Buat Master Barang Baru -->
+                    <div id="newInventoryBox" class="hidden grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Nama Barang Baru</label>
+                            <input type="text" name="new_item_name" id="new_item_name" placeholder="Misal: Router MikroTik RB750Gr3"
+                                class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Kategori Barang</label>
+                            <select name="new_item_category" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="Router & Gateway">Router & Gateway</option>
+                                <option value="Access Point / WiFi">Access Point / WiFi</option>
+                                <option value="Switch & Hub">Switch & Hub</option>
+                                <option value="Kabel & Fiber Optic">Kabel & Fiber Optic</option>
+                                <option value="Konverter & SFP">Konverter & SFP</option>
+                                <option value="Power & Adaptor">Power & Adaptor</option>
+                                <option value="Alat & Tang Crimping">Alat & Tang Crimping</option>
+                                <option value="Aksesoris & Konektor">Aksesoris & Konektor</option>
+                                <option value="Lain-lain">Lain-lain</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Satuan</label>
+                            <select name="new_item_unit" class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="unit">unit</option>
+                                <option value="pcs">pcs</option>
+                                <option value="meter">meter</option>
+                                <option value="roll">roll</option>
+                                <option value="set">set</option>
+                                <option value="pack">pack</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Lokasi Penyimpanan</label>
+                            <input type="text" name="inventory_location" placeholder="Misal: Gudang Posko RT / Rak Server"
+                                class="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </form>
     </div>
 
@@ -169,6 +255,12 @@
                             @if($exp->notes)
                             <span class="text-[11px] text-slate-400 mt-0.5 block italic">{{ $exp->notes }}</span>
                             @endif
+                            @if($exp->is_inventory && $exp->inventoryItem)
+                            <a href="{{ route('inventory.index', ['tab' => 'movements', 'item_id' => $exp->inventory_item_id]) }}" class="inline-flex items-center gap-1.5 mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 hover:bg-blue-100 transition-colors">
+                                <span>📦</span>
+                                <span>Masuk Inventory: {{ $exp->inventoryItem->name }} ({{ $exp->inventory_quantity }} {{ $exp->inventoryItem->unit }})</span>
+                            </a>
+                            @endif
                         </td>
                         <td class="py-3.5 px-5">
                             <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200/60">
@@ -213,6 +305,12 @@
                         <span class="text-[10px] text-slate-400 font-mono">{{ $exp->expense_number }} • {{ $exp->expense_date->translatedFormat('d M Y') }}</span>
                         @if($exp->notes)
                         <span class="text-[10px] text-slate-500 italic block mt-0.5">{{ $exp->notes }}</span>
+                        @endif
+                        @if($exp->is_inventory && $exp->inventoryItem)
+                        <a href="{{ route('inventory.index', ['tab' => 'movements', 'item_id' => $exp->inventory_item_id]) }}" class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 hover:bg-blue-100 transition-colors">
+                            <span>📦</span>
+                            <span>{{ $exp->inventoryItem->name }} ({{ $exp->inventory_quantity }} {{ $exp->inventoryItem->unit }})</span>
+                        </a>
                         @endif
                     </div>
                     <span class="font-mono font-extrabold text-rose-600 text-sm block">
@@ -290,6 +388,27 @@
             showExpenseNewCategory();
         } else {
             cancelExpenseNewCategory();
+        }
+    }
+
+    function toggleInventoryFields(checked) {
+        const section = document.getElementById('inventorySection');
+        if (checked) {
+            section.classList.remove('hidden');
+        } else {
+            section.classList.add('hidden');
+        }
+    }
+
+    function switchInventoryMode(mode) {
+        const existingBox = document.getElementById('existingInventoryBox');
+        const newBox = document.getElementById('newInventoryBox');
+        if (mode === 'new') {
+            existingBox.classList.add('hidden');
+            newBox.classList.remove('hidden');
+        } else {
+            newBox.classList.add('hidden');
+            existingBox.classList.remove('hidden');
         }
     }
 </script>

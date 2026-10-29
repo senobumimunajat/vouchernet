@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OrderInvoiceController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SuperAdminApprovalController;
@@ -68,6 +69,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/finances/expenses', [FinanceController::class, 'expenses'])->name('finance.expenses');
         Route::post('/finances/expenses', [FinanceController::class, 'storeExpense'])->name('finance.expenses.store');
         Route::delete('/finances/expenses/{expense}', [FinanceController::class, 'destroyExpense'])->name('finance.expenses.destroy');
+
+        // Inventaris & Logistik Barang (Router, Alat, AP, Kabel FO, dll - Admin & Super Admin)
+        Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+        Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->name('inventory.items.store');
+        Route::put('/inventory/items/{item}', [InventoryController::class, 'updateItem'])->name('inventory.items.update');
+        Route::delete('/inventory/items/{item}', [InventoryController::class, 'destroyItem'])->name('inventory.items.destroy');
+        Route::post('/inventory/movements/in', [InventoryController::class, 'storeStockIn'])->name('inventory.movements.in');
+        Route::post('/inventory/movements/out', [InventoryController::class, 'storeStockOut'])->name('inventory.movements.out');
+        Route::delete('/inventory/movements/{movement}', [InventoryController::class, 'destroyMovement'])->name('inventory.movements.destroy');
     });
 
     // 3. SUPER ADMIN EXCLUSIVE ROUTES (Keuangan, Approve Hapus, Paket Voucher CRUD, Reset Password)

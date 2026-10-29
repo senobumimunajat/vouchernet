@@ -210,6 +210,13 @@
             <a href="{{ route('admin.orders.create_offline') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold {{ request()->routeIs('admin.orders.create_offline') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70' : 'text-slate-700 hover:bg-slate-100' }}">
                 Input Order Offline
             </a>
+            <a href="{{ route('inventory.index') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold {{ request()->routeIs('inventory.*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70' : 'text-slate-700 hover:bg-slate-100' }}">
+                <span>Inventaris Barang</span>
+                @php $mLowStock = \App\Models\InventoryItem::where('is_active', true)->whereColumn('stock', '<=', 'min_stock')->count(); @endphp
+                @if($mLowStock > 0)
+                <span class="px-2 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded-full" title="Stok menipis">{{ $mLowStock }}</span>
+                @endif
+            </a>
             @if(!auth()->user()->isSuperAdmin())
             <a href="{{ route('finance.expenses') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold {{ request()->routeIs('finance.expenses*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70' : 'text-slate-700 hover:bg-slate-100' }}">
                 Beban Pengeluaran
@@ -290,6 +297,16 @@
                 <a href="{{ route('admin.orders.create_offline') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-medium transition-all {{ request()->routeIs('admin.orders.create_offline') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                     <svg class="w-4 h-4 {{ request()->routeIs('admin.orders.create_offline') ? 'text-blue-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Input Order Offline
+                </a>
+                <a href="{{ route('inventory.index') }}" class="flex items-center justify-between px-3 py-2.5 rounded-2xl font-medium transition-all {{ request()->routeIs('inventory.*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <span class="flex items-center gap-3">
+                        <svg class="w-4 h-4 {{ request()->routeIs('inventory.*') ? 'text-blue-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                        Inventaris Barang
+                    </span>
+                    @php $deskLowStock = \App\Models\InventoryItem::where('is_active', true)->whereColumn('stock', '<=', 'min_stock')->count(); @endphp
+                    @if($deskLowStock > 0)
+                    <span class="px-2 py-0.5 text-xs font-bold bg-amber-500 text-white rounded-full" title="Barang stok menipis">{{ $deskLowStock }}</span>
+                    @endif
                 </a>
                 @if(!auth()->user()->isSuperAdmin())
                 <a href="{{ route('finance.expenses') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-medium transition-all {{ request()->routeIs('finance.expenses*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Expense;
 use App\Models\Income;
+use App\Models\InventoryItem;
+use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
@@ -554,7 +556,7 @@ class FinanceController extends Controller
 
     public function expenses(Request $request)
     {
-        $query = Expense::with('creator');
+        $query = Expense::with(['creator', 'inventoryItem']);
 
         if ($request->filled('category')) {
             $query->where('category', $request->category);
@@ -566,7 +568,7 @@ class FinanceController extends Controller
             $query->whereYear('expense_date', $request->year);
         }
 
-        $expenses = $query->latest('expense_date')->paginate(15);
+        $expenses = $query->latest('expense_date')->latest('id')->paginate(15);
         $totalAmount = (clone $query)->sum('amount');
 
         $defaultExpenseCategories = [
@@ -583,7 +585,9 @@ class FinanceController extends Controller
         $existingCategories = Expense::distinct()->pluck('category')->filter()->toArray();
         $categories = array_values(array_unique(array_merge($defaultExpenseCategories, $existingCategories)));
 
-        return view('superadmin.finance.expenses', compact('expenses', 'totalAmount', 'categories'));
+        $inventoryItems = InventoryItem::where('is_active', true)->orderBy('name')->get();
+
+        return view('superadmin.finance.expenses', compact('expenses', 'totalAmount', 'categories', 'inventoryItems'));
     }
 
     public function storeExpense(Request $request)
@@ -606,6 +610,14 @@ class FinanceController extends Controller
             'expense_date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
             'receipt_file' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'is_inventory' => ['nullable', 'boolean'],
+            'inventory_mode' => ['nullable', 'string', 'in:existing,new'],
+            'inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
+            'inventory_quantity' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'new_item_name' => ['nullable', 'string', 'max:150'],
+            'new_item_category' => ['nullable', 'string', 'max:100'],
+            'new_item_unit' => ['nullable', 'string', 'max:30'],
+            'inventory_location' => ['nullable', 'string', 'max:100'],
         ]);
 
         $receiptPath = null;
@@ -614,26 +626,104 @@ class FinanceController extends Controller
         }
 
         $expenseNumber = 'EXP-' . date('Ymd') . '-' . strtoupper(Str::random(4));
+        $isInventory = $request->boolean('is_inventory');
+        $inventoryMode = $request->input('inventory_mode', 'existing');
+        $inventoryQty = max(1, (int) $request->input('inventory_quantity', 1));
+        $inventoryItemId = $request->input('inventory_item_id');
+        $newItemName = trim((string) $request->input('new_item_name'));
+        $newItemCategory = trim((string) $request->input('new_item_category'));
+        $newItemUnit = trim((string) $request->input('new_item_unit', 'unit'));
+        $inventoryLocation = trim((string) $request->input('inventory_location'));
 
-        Expense::create([
-            'expense_number' => $expenseNumber,
-            'title' => $validated['title'],
-            'category' => $validated['category'],
-            'amount' => $validated['amount'],
-            'expense_date' => $validated['expense_date'],
-            'notes' => $validated['notes'] ?? null,
-            'receipt_file' => $receiptPath,
-            'created_by' => Auth::id(),
-        ]);
+        DB::transaction(function () use (
+            $validated,
+            $receiptPath,
+            $expenseNumber,
+            $isInventory,
+            $inventoryMode,
+            $inventoryQty,
+            $inventoryItemId,
+            $newItemName,
+            $newItemCategory,
+            $newItemUnit,
+            $inventoryLocation
+        ) {
+            $targetItem = null;
 
-        return back()->with('success', 'Pengeluaran kas berhasil dicatat!');
+            if ($isInventory) {
+                if ($inventoryMode === 'new' && !empty($newItemName)) {
+                    $itemCategory = !empty($newItemCategory) ? $newItemCategory : 'Router & Gateway';
+                    $itemUnit = !empty($newItemUnit) ? $newItemUnit : 'unit';
+                    $targetItem = InventoryItem::create([
+                        'item_code' => InventoryItem::generateCode($itemCategory),
+                        'name' => $newItemName,
+                        'category' => $itemCategory,
+                        'unit' => $itemUnit,
+                        'stock' => 0,
+                        'min_stock' => 2,
+                        'unit_price' => round((float) $validated['amount'] / $inventoryQty, 2),
+                        'location' => $inventoryLocation ?: 'Gudang Posko',
+                        'description' => 'Didaftarkan otomatis dari Pengeluaran ' . $expenseNumber,
+                        'is_active' => true,
+                    ]);
+                } elseif (!empty($inventoryItemId)) {
+                    $targetItem = InventoryItem::find($inventoryItemId);
+                }
+            }
+
+            $expense = Expense::create([
+                'expense_number' => $expenseNumber,
+                'title' => $validated['title'],
+                'category' => $validated['category'],
+                'amount' => $validated['amount'],
+                'expense_date' => $validated['expense_date'],
+                'notes' => $validated['notes'] ?? null,
+                'receipt_file' => $receiptPath,
+                'is_inventory' => $targetItem ? true : false,
+                'inventory_item_id' => $targetItem?->id,
+                'inventory_quantity' => $targetItem ? $inventoryQty : null,
+                'created_by' => Auth::id(),
+            ]);
+
+            if ($targetItem) {
+                $targetItem->addStock(
+                    $inventoryQty,
+                    "Pembelian Kas: {$validated['title']} ({$expenseNumber})",
+                    $inventoryLocation ?: ($targetItem->location ?: 'Gudang Posko'),
+                    $expense->id,
+                    $validated['notes'] ?? "Dicatat otomatis dari menu pengeluaran kas.",
+                    Auth::id(),
+                    $validated['expense_date']
+                );
+            }
+        });
+
+        $msg = $isInventory
+            ? 'Pengeluaran kas berhasil dicatat dan stok barang otomatis ditambahkan ke Inventory!'
+            : 'Pengeluaran kas berhasil dicatat!';
+
+        return back()->with('success', $msg);
     }
 
     public function destroyExpense(Expense $expense)
     {
         $user = Auth::user();
         if ($user->isSuperAdmin() || $expense->created_by === $user->id) {
-            $expense->delete();
+            DB::transaction(function () use ($expense) {
+                if ($expense->is_inventory && $expense->inventory_item_id && $expense->inventory_quantity > 0) {
+                    $item = InventoryItem::find($expense->inventory_item_id);
+                    if ($item) {
+                        if ($item->stock >= $expense->inventory_quantity) {
+                            $item->decrement('stock', $expense->inventory_quantity);
+                        } else {
+                            $item->update(['stock' => 0]);
+                        }
+                    }
+                    InventoryMovement::where('expense_id', $expense->id)->delete();
+                }
+                $expense->delete();
+            });
+
             return back()->with('success', 'Catatan pengeluaran berhasil dihapus.');
         }
 

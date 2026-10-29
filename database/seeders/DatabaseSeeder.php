@@ -122,5 +122,88 @@ class DatabaseSeeder extends Seeder
         foreach ($packages as $pkg) {
             VoucherPackage::updateOrCreate(['name' => $pkg['name']], $pkg);
         }
+
+        // 6. Master Inventaris Barang Awal
+        $inventoryItems = [
+            [
+                'item_code' => 'INV-RTR-001',
+                'name' => 'Router MikroTik RB750Gr3 (hEX)',
+                'category' => 'Router & Gateway',
+                'unit' => 'unit',
+                'stock' => 5,
+                'min_stock' => 2,
+                'unit_price' => 780000,
+                'location' => 'Rak Server Utama',
+                'description' => 'Router Gigabit utama pembagi bandwidth dan server hotspot.',
+                'is_active' => true,
+            ],
+            [
+                'item_code' => 'INV-APW-001',
+                'name' => 'Access Point Ruijie Reyee RG-RAP1200(F)',
+                'category' => 'Access Point / WiFi',
+                'unit' => 'unit',
+                'stock' => 8,
+                'min_stock' => 3,
+                'unit_price' => 450000,
+                'location' => 'Gudang Posko',
+                'description' => 'AP dual-band untuk dipasang di warung mitra dan tiang RT.',
+                'is_active' => true,
+            ],
+            [
+                'item_code' => 'INV-SWT-001',
+                'name' => 'Switch Hub 8-Port Gigabit TP-Link',
+                'category' => 'Switch & Hub',
+                'unit' => 'unit',
+                'stock' => 4,
+                'min_stock' => 2,
+                'unit_price' => 230000,
+                'location' => 'Gudang Posko',
+                'description' => 'Switch distribusi tiang percabangan antar gang.',
+                'is_active' => true,
+            ],
+            [
+                'item_code' => 'INV-KBL-001',
+                'name' => 'Kabel FO Dropcore 1 Core 3 Seling (1000m)',
+                'category' => 'Kabel & Fiber Optic',
+                'unit' => 'roll',
+                'stock' => 3,
+                'min_stock' => 1,
+                'unit_price' => 420000,
+                'location' => 'Gudang Posko',
+                'description' => 'Kabel optik outdoor tahan tarik untuk tiang ke rumah mitra.',
+                'is_active' => true,
+            ],
+            [
+                'item_code' => 'INV-CVT-001',
+                'name' => 'Media Converter Netlink HTB-3100 Pair (A+B)',
+                'category' => 'Konverter & SFP',
+                'unit' => 'set',
+                'stock' => 6,
+                'min_stock' => 2,
+                'unit_price' => 135000,
+                'location' => 'Box Komponen',
+                'description' => 'Konverter FO ke LAN RJ45 100Mbps.',
+                'is_active' => true,
+            ],
+            [
+                'item_code' => 'INV-PWR-001',
+                'name' => 'Adaptor Switching 12V 1.5A Jack DC',
+                'category' => 'Power & Adaptor',
+                'unit' => 'unit',
+                'stock' => 12,
+                'min_stock' => 4,
+                'unit_price' => 35000,
+                'location' => 'Box Komponen',
+                'description' => 'Power supply pengganti untuk HTB atau router.',
+                'is_active' => true,
+            ],
+        ];
+
+        foreach ($inventoryItems as $itemData) {
+            \App\Models\InventoryItem::updateOrCreate(
+                ['item_code' => $itemData['item_code']],
+                $itemData
+            );
+        }
     }
 }

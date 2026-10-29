@@ -17,6 +17,9 @@ class Expense extends Model
         'expense_date',
         'notes',
         'receipt_file',
+        'is_inventory',
+        'inventory_item_id',
+        'inventory_quantity',
         'created_by',
     ];
 
@@ -25,11 +28,23 @@ class Expense extends Model
         return [
             'amount' => 'decimal:2',
             'expense_date' => 'date',
+            'is_inventory' => 'boolean',
+            'inventory_quantity' => 'integer',
         ];
     }
 
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function inventoryItem()
+    {
+        return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
+    }
+
+    public function inventoryMovements()
+    {
+        return $this->hasMany(InventoryMovement::class, 'expense_id');
     }
 }

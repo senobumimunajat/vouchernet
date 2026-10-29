@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Expense;
+use App\Models\InventoryItem;
+use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Setting;
@@ -1406,6 +1408,164 @@ class VoucherNetTest extends TestCase
         $respOnlineKwitansi = $this->actingAs($superAdmin)->get(route('orders.invoice', $onlineOrder));
         $respOnlineKwitansi->assertSee($admin->name);
         $respOnlineKwitansi->assertSee(strtoupper(Setting::get('app_name', 'VoucherNet')));
+    }
+
+    public function test_admin_and_super_admin_can_access_inventory_and_tenant_is_forbidden(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+        $admin = User::where('role', 'admin')->first();
+        $tenant = User::where('role', 'tenant')->first();
+
+        // Super Admin access
+        $respSuper = $this->actingAs($superAdmin)->get(route('inventory.index'));
+        $respSuper->assertStatus(200);
+        $respSuper->assertSee('Inventaris & Logistik Barang');
+        $respSuper->assertSee('Router MikroTik RB750Gr3');
+
+        // Admin access
+        $respAdmin = $this->actingAs($admin)->get(route('inventory.index'));
+        $respAdmin->assertStatus(200);
+        $respAdmin->assertSee('Inventaris & Logistik Barang');
+
+        // Tenant forbidden
+        $respTenant = $this->actingAs($tenant)->get(route('inventory.index'));
+        $respTenant->assertStatus(403);
+    }
+
+    public function test_admin_and_super_admin_can_record_stock_out_and_stock_is_deducted(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $item = InventoryItem::where('stock', '>', 2)->first();
+        $this->assertNotNull($item);
+        $initialStock = $item->stock;
+
+        // Valid stock out
+        $response = $this->actingAs($admin)->post(route('inventory.movements.out'), [
+            'inventory_item_id' => $item->id,
+            'quantity' => 2,
+            'movement_date' => date('Y-m-d'),
+            'purpose' => 'Pemasangan di Mitra Toko Berkah',
+            'recipient' => 'Warung Toko Berkah / RT 03',
+            'notes' => 'SN: 9812738912',
+        ]);
+
+        $response->assertSessionHas('success');
+        $item->refresh();
+        $this->assertEquals($initialStock - 2, $item->stock);
+
+        $movement = InventoryMovement::latest('id')->first();
+        $this->assertEquals('out', $movement->type);
+        $this->assertEquals(2, $movement->quantity);
+        $this->assertEquals($admin->id, $movement->created_by);
+        $this->assertEquals('Pemasangan di Mitra Toko Berkah', $movement->purpose);
+
+        // Exceeding stock should fail
+        $failResponse = $this->actingAs($admin)->post(route('inventory.movements.out'), [
+            'inventory_item_id' => $item->id,
+            'quantity' => 99999,
+            'movement_date' => date('Y-m-d'),
+            'purpose' => 'Permintaan Berlebih',
+        ]);
+        $failResponse->assertSessionHasErrors('message');
+    }
+
+    public function test_admin_and_super_admin_can_record_stock_in_and_stock_is_added(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+        $item = InventoryItem::first();
+        $initialStock = $item->stock;
+
+        $response = $this->actingAs($superAdmin)->post(route('inventory.movements.in'), [
+            'inventory_item_id' => $item->id,
+            'quantity' => 5,
+            'movement_date' => date('Y-m-d'),
+            'purpose' => 'Restock Pengadaan Baru Toko Komputer',
+            'supplier_or_source' => 'Gudang Pusat',
+            'notes' => 'Batch 2 Nota 112',
+        ]);
+
+        $response->assertSessionHas('success');
+        $item->refresh();
+        $this->assertEquals($initialStock + 5, $item->stock);
+
+        $movement = InventoryMovement::latest('id')->first();
+        $this->assertEquals('in', $movement->type);
+        $this->assertEquals(5, $movement->quantity);
+    }
+
+    public function test_expense_can_be_checked_to_automatically_add_stock_to_existing_inventory(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+        $item = InventoryItem::first();
+        $initialStock = $item->stock;
+
+        $response = $this->actingAs($superAdmin)->post(route('finance.expenses.store'), [
+            'title' => 'Beli Switch Hub Tambahan',
+            'category' => 'Perangkat / Router / AP',
+            'amount' => '450.000',
+            'expense_date' => date('Y-m-d'),
+            'notes' => 'Pembelian toko elektronik',
+            'is_inventory' => 1,
+            'inventory_mode' => 'existing',
+            'inventory_item_id' => $item->id,
+            'inventory_quantity' => 3,
+        ]);
+
+        $response->assertSessionHas('success');
+        $item->refresh();
+        $this->assertEquals($initialStock + 3, $item->stock);
+
+        $expense = Expense::latest('id')->first();
+        $this->assertTrue((bool) $expense->is_inventory);
+        $this->assertEquals($item->id, $expense->inventory_item_id);
+        $this->assertEquals(3, $expense->inventory_quantity);
+
+        // Check view displays inventory badge
+        $viewResp = $this->actingAs($superAdmin)->get(route('finance.expenses'));
+        $viewResp->assertSee('Masuk Inventory: ' . $item->name);
+
+        // Deleting the expense rolls back inventory stock
+        $delResp = $this->actingAs($superAdmin)->delete(route('finance.expenses.destroy', $expense));
+        $delResp->assertSessionHas('success');
+        $item->refresh();
+        $this->assertEquals($initialStock, $item->stock);
+    }
+
+    public function test_expense_can_be_checked_to_create_brand_new_inventory_item_and_add_stock(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+        $uniqueName = 'Patch Cord SC-SC ' . rand(100, 999);
+
+        $response = $this->actingAs($superAdmin)->post(route('finance.expenses.store'), [
+            'title' => 'Beli Kabel Patch Cord FO 3 Meter',
+            'category' => 'Kabel FO & Aksesoris',
+            'amount' => '75.000',
+            'expense_date' => date('Y-m-d'),
+            'notes' => 'Kabel jumper antar rack',
+            'is_inventory' => 1,
+            'inventory_mode' => 'new',
+            'new_item_name' => $uniqueName,
+            'new_item_category' => 'Kabel & Fiber Optic',
+            'new_item_unit' => 'pcs',
+            'inventory_quantity' => 5,
+            'inventory_location' => 'Rak Server Utama',
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $newItem = InventoryItem::where('name', $uniqueName)->first();
+        $this->assertNotNull($newItem);
+        $this->assertEquals(5, $newItem->stock);
+        $this->assertEquals('Kabel & Fiber Optic', $newItem->category);
+        $this->assertEquals('pcs', $newItem->unit);
+        $this->assertEquals('Rak Server Utama', $newItem->location);
+
+        $expense = Expense::latest('id')->first();
+        $this->assertEquals($newItem->id, $expense->inventory_item_id);
+
+        // Cleanup
+        $expense->delete();
+        $newItem->delete();
     }
 }
 
