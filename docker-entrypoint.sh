@@ -54,13 +54,13 @@ fi
 echo "Running Migrations..."
 php artisan migrate --force
 
-# Run seeder only if users table is empty (prevent resetting changed passwords on restart)
-USER_COUNT=$(php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap(); echo \App\Models\User::count();" 2>/dev/null || echo "0")
-if [ "$USER_COUNT" = "0" ]; then
-    echo "First time database setup detected, running initial seeders..."
+# Run seeder only if super admin does not exist
+SUPERADMIN_EXISTS=$(php -r "require 'vendor/autoload.php'; \$app = require_once 'bootstrap/app.php'; \$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap(); echo \App\Models\User::where('role', 'super_admin')->count();" 2>/dev/null || echo "0")
+if [ "$SUPERADMIN_EXISTS" = "0" ]; then
+    echo "No super admin found, running initial seeders..."
     php artisan db:seed --force
 else
-    echo "Database already contains users (${USER_COUNT} users), skipping seeders to preserve custom passwords and data."
+    echo "Super admin already exists, skipping seeders to preserve database state."
 fi
 
 # Create public storage link
