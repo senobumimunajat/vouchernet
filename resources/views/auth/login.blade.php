@@ -35,14 +35,14 @@
                     <label for="username" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Username</label>
                     <input type="text" id="username" name="username" value="{{ old('username') }}" required autofocus
                         class="mt-1.5 block w-full px-4 py-3 bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                        placeholder="superadmin / admin / warung_siti">
+                        placeholder="Masukkan username Anda">
                 </div>
 
                 <div>
                     <label for="password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
                     <input type="password" id="password" name="password" required
                         class="mt-1.5 block w-full px-4 py-3 bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                        placeholder="••••••••">
+                        placeholder="Masukkan password Anda">
                 </div>
 
                 <div class="flex items-center justify-between">
