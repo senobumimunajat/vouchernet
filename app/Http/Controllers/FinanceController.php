@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\Income;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
+use App\Models\MerchantDeposit;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
@@ -37,6 +38,7 @@ class FinanceController extends Controller
         $allTimePendingQuery = Order::where('status', 'menunggu_pembayaran');
         $incomeQuery = Income::query();
         $expenseQuery = Expense::query();
+        $depositBaseQuery = MerchantDeposit::query();
 
         // Apply Date / Month Filter
         if ($rangeType === 'custom' && $startDate && $endDate) {
@@ -44,6 +46,7 @@ class FinanceController extends Controller
             $pendingOrderQuery->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
             $incomeQuery->whereBetween('income_date', [$startDate, $endDate]);
             $expenseQuery->whereBetween('expense_date', [$startDate, $endDate]);
+            $depositBaseQuery->whereBetween('deposit_date', [$startDate, $endDate]);
             $periodLabel = Carbon::parse($startDate)->translatedFormat('d M Y') . ' s/d ' . Carbon::parse($endDate)->translatedFormat('d M Y');
         } else {
             $rangeType = 'month';
@@ -52,12 +55,14 @@ class FinanceController extends Controller
                 $pendingOrderQuery->whereYear('created_at', $selectedYear);
                 $incomeQuery->whereYear('income_date', $selectedYear);
                 $expenseQuery->whereYear('expense_date', $selectedYear);
+                $depositBaseQuery->whereYear('deposit_date', $selectedYear);
             }
             if ($selectedMonth && $selectedMonth !== 'all') {
                 $orderQuery->whereMonth('confirmed_at', $selectedMonth);
                 $pendingOrderQuery->whereMonth('created_at', $selectedMonth);
                 $incomeQuery->whereMonth('income_date', $selectedMonth);
                 $expenseQuery->whereMonth('expense_date', $selectedMonth);
+                $depositBaseQuery->whereMonth('deposit_date', $selectedMonth);
                 $periodLabel = Carbon::create($selectedYear, (int)$selectedMonth)->translatedFormat('F Y');
             } else {
                 $periodLabel = 'Semua Bulan ' . $selectedYear;
@@ -68,6 +73,7 @@ class FinanceController extends Controller
             $orderQuery->where('tenant_id', $selectedTenant);
             $pendingOrderQuery->where('tenant_id', $selectedTenant);
             $allTimePendingQuery->where('tenant_id', $selectedTenant);
+            $depositBaseQuery->where('tenant_id', $selectedTenant);
         }
 
         if ($selectedPackage) {
@@ -167,6 +173,12 @@ class FinanceController extends Controller
         $projectedVoucherRevenue = $netOwnerRevenue + $pendingOwnerAmount;
         $projectedVouchersSold = $totalVouchersSold + $pendingVouchersCount;
 
+        // Metrik Saldo Merchant / Deposit Mandiri
+        $depositRevenue = (float) (clone $depositBaseQuery)->where('status', 'lunas')->sum('actual_paid_amount');
+        $depositResellerProfit = (float) (clone $depositBaseQuery)->where('status', 'lunas')->sum('merchant_profit');
+        $pendingDepositAmount = (float) (clone $depositBaseQuery)->where('status', 'tempo')->sum('amount');
+        $pendingDepositCount = (int) (clone $depositBaseQuery)->where('status', 'tempo')->count();
+
         // Metrik Pemasukan Kas Lain
         $otherIncome = (float) $incomeQuery->sum('amount');
 
@@ -174,11 +186,11 @@ class FinanceController extends Controller
         $totalExpenses = (float) $expenseQuery->sum('amount');
 
         // Total Kas Masuk & Laba Bersih Realisasi
-        $totalCashIn = $netOwnerRevenue + $otherIncome;
+        $totalCashIn = $netOwnerRevenue + $depositRevenue + $otherIncome;
         $netProfit = $totalCashIn - $totalExpenses;
 
         // Proyeksi Total Kas Masuk & Proyeksi Laba Bersih
-        $projectedTotalCashIn = $totalCashIn + $pendingOwnerAmount;
+        $projectedTotalCashIn = $totalCashIn + $pendingOwnerAmount + $pendingDepositAmount;
         $projectedNetProfit = $projectedTotalCashIn - $totalExpenses;
 
         // Breakdown per Paket Voucher (Difilter sesuai periode & tenant terpilih)
@@ -346,7 +358,11 @@ class FinanceController extends Controller
         $recentExpenses = (clone $expenseQuery)->with('creator')->latest('expense_date')->limit(10)->get();
         $recentExpensesCount = (clone $expenseQuery)->count();
 
-        // 4. Analisis Peringkat: Paket Paling Laku & Warung Penjualan Terbanyak (Periode Terpilih)
+        // 4. Data Deposit & Saldo Merchant (10 Terakhir)
+        $recentDeposits = (clone $depositBaseQuery)->with(['tenant', 'confirmedBy'])->latest('deposit_date')->latest('id')->limit(10)->get();
+        $recentDepositsCount = (clone $depositBaseQuery)->count();
+
+        // 5. Analisis Peringkat: Paket Paling Laku & Warung Penjualan Terbanyak (Periode Terpilih)
         // A. Peringkat Paket Paling Laku
         $bestSellingPackage = $packagesBreakdown->first();
         $topPackagesList = $packagesBreakdown->take(3);
@@ -431,6 +447,10 @@ class FinanceController extends Controller
             'grossTurnover',
             'netOwnerRevenue',
             'resellerCommission',
+            'depositRevenue',
+            'depositResellerProfit',
+            'pendingDepositAmount',
+            'pendingDepositCount',
             'otherIncome',
             'totalCashIn',
             'totalExpenses',
@@ -441,6 +461,8 @@ class FinanceController extends Controller
             'otherIncomesCount',
             'recentExpenses',
             'recentExpensesCount',
+            'recentDeposits',
+            'recentDepositsCount',
             'tenants',
             'packages',
             'pendingOrdersCount',
@@ -515,15 +537,52 @@ class FinanceController extends Controller
         $grossTurnover = (float) $orderQuery->sum('total_printed_amount');
         $netOwnerRevenue = (float) $orderQuery->sum('total_owner_amount');
         $resellerCommission = (float) $orderQuery->sum('total_reseller_profit');
+
+        $depositRevenue = (float) MerchantDeposit::where('status', 'lunas')
+            ->when($selectedTenant, fn($q) => $q->where('tenant_id', $selectedTenant))
+            ->when($rangeType === 'custom' && $startDate && $endDate, fn($q) => $q->whereBetween('deposit_date', [$startDate, $endDate]))
+            ->when($rangeType !== 'custom' && $selectedYear, fn($q) => $q->whereYear('deposit_date', $selectedYear))
+            ->when($rangeType !== 'custom' && $selectedMonth && $selectedMonth !== 'all', fn($q) => $q->whereMonth('deposit_date', $selectedMonth))
+            ->sum('actual_paid_amount');
+
+        $depositResellerProfit = (float) MerchantDeposit::where('status', 'lunas')
+            ->when($selectedTenant, fn($q) => $q->where('tenant_id', $selectedTenant))
+            ->when($rangeType === 'custom' && $startDate && $endDate, fn($q) => $q->whereBetween('deposit_date', [$startDate, $endDate]))
+            ->when($rangeType !== 'custom' && $selectedYear, fn($q) => $q->whereYear('deposit_date', $selectedYear))
+            ->when($rangeType !== 'custom' && $selectedMonth && $selectedMonth !== 'all', fn($q) => $q->whereMonth('deposit_date', $selectedMonth))
+            ->sum('merchant_profit');
+
+        $pendingDepositAmount = (float) MerchantDeposit::where('status', 'tempo')
+            ->when($selectedTenant, fn($q) => $q->where('tenant_id', $selectedTenant))
+            ->when($rangeType === 'custom' && $startDate && $endDate, fn($q) => $q->whereBetween('deposit_date', [$startDate, $endDate]))
+            ->when($rangeType !== 'custom' && $selectedYear, fn($q) => $q->whereYear('deposit_date', $selectedYear))
+            ->when($rangeType !== 'custom' && $selectedMonth && $selectedMonth !== 'all', fn($q) => $q->whereMonth('deposit_date', $selectedMonth))
+            ->sum('amount');
+
+        $pendingDepositCount = (int) MerchantDeposit::where('status', 'tempo')
+            ->when($selectedTenant, fn($q) => $q->where('tenant_id', $selectedTenant))
+            ->when($rangeType === 'custom' && $startDate && $endDate, fn($q) => $q->whereBetween('deposit_date', [$startDate, $endDate]))
+            ->when($rangeType !== 'custom' && $selectedYear, fn($q) => $q->whereYear('deposit_date', $selectedYear))
+            ->when($rangeType !== 'custom' && $selectedMonth && $selectedMonth !== 'all', fn($q) => $q->whereMonth('deposit_date', $selectedMonth))
+            ->count();
+
         $otherIncome = (float) $incomeQuery->sum('amount');
         $totalExpenses = (float) $expenseQuery->sum('amount');
-        $totalCashIn = $netOwnerRevenue + $otherIncome;
+        $totalCashIn = $netOwnerRevenue + $depositRevenue + $otherIncome;
         $netProfit = $totalCashIn - $totalExpenses;
 
         // All Items for Full Report
         $orders = (clone $orderQuery)->with(['tenant', 'package', 'items.package'])->latest('confirmed_at')->get();
         $incomes = (clone $incomeQuery)->with('creator')->latest('income_date')->get();
         $expenses = (clone $expenseQuery)->with('creator')->latest('expense_date')->get();
+        $deposits = MerchantDeposit::with(['tenant', 'confirmedBy'])
+            ->when($selectedTenant, fn($q) => $q->where('tenant_id', $selectedTenant))
+            ->when($rangeType === 'custom' && $startDate && $endDate, fn($q) => $q->whereBetween('deposit_date', [$startDate, $endDate]))
+            ->when($rangeType !== 'custom' && $selectedYear, fn($q) => $q->whereYear('deposit_date', $selectedYear))
+            ->when($rangeType !== 'custom' && $selectedMonth && $selectedMonth !== 'all', fn($q) => $q->whereMonth('deposit_date', $selectedMonth))
+            ->latest('deposit_date')
+            ->latest('id')
+            ->get();
 
         $appName = Setting::get('app_name', 'VoucherNet RT/RW');
         $adminPhone = Setting::get('admin_whatsapp_number', '0812-3456-7890');
@@ -541,6 +600,10 @@ class FinanceController extends Controller
             'grossTurnover',
             'netOwnerRevenue',
             'resellerCommission',
+            'depositRevenue',
+            'depositResellerProfit',
+            'pendingDepositAmount',
+            'pendingDepositCount',
             'otherIncome',
             'totalCashIn',
             'totalExpenses',
@@ -548,6 +611,7 @@ class FinanceController extends Controller
             'orders',
             'incomes',
             'expenses',
+            'deposits',
             'appName',
             'adminPhone',
             'ownerName'

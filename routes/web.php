@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\MerchantDepositController;
 use App\Http\Controllers\OrderInvoiceController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SuperAdminApprovalController;
@@ -31,12 +32,17 @@ Route::middleware('auth')->group(function () {
 
     // Dokumen Cetak / Digital: Faktur Tagihan & Kwitansi Pelunasan (Akses: Mitra & Admin)
     Route::get('/orders/{order}/invoice', [OrderInvoiceController::class, 'show'])->name('orders.invoice');
+    Route::get('/deposits/{deposit}/invoice', [MerchantDepositController::class, 'invoice'])->name('deposits.invoice');
 
     // 1. TENANT ROUTES (Reseller / Warung)
     Route::middleware('role:tenant')->prefix('tenant')->name('tenant.')->group(function () {
         Route::get('/orders', [TenantOrderController::class, 'index'])->name('orders.index');
         Route::post('/orders', [TenantOrderController::class, 'store'])->name('orders.store');
         Route::get('/orders/{order}/download-pdf', [TenantOrderController::class, 'downloadPdf'])->name('orders.download_pdf');
+
+        // Beli Saldo Kuota Cetak Mandiri
+        Route::get('/deposits', [MerchantDepositController::class, 'tenantIndex'])->name('deposits.index');
+        Route::post('/deposits', [MerchantDepositController::class, 'tenantStore'])->name('deposits.store');
     });
 
     // 2. OPERATIONAL ROUTES (Admin & Super Admin)
@@ -49,7 +55,22 @@ Route::middleware('auth')->group(function () {
             Route::post('/orders/{order}/confirm', [AdminOrderController::class, 'confirmPayment'])->name('orders.confirm');
             Route::post('/orders/{order}/cancel-unpaid', [AdminOrderController::class, 'cancelUnpaid'])->name('orders.cancel_unpaid');
             Route::post('/orders/{order}/request-delete', [AdminOrderController::class, 'requestDelete'])->name('orders.request_delete');
+
+            // Deposit & Saldo Cetak Mandiri (Admin & Super Admin)
+            Route::get('/deposits', [MerchantDepositController::class, 'adminIndex'])->name('deposits.index');
+            Route::post('/deposits', [MerchantDepositController::class, 'adminStore'])->name('deposits.store');
+            Route::post('/deposits/{deposit}/confirm', [MerchantDepositController::class, 'confirm'])->name('deposits.confirm');
+            Route::get('/deposits/{deposit}/settle', fn() => redirect()->route('admin.deposits.index'));
+            Route::post('/deposits/{deposit}/settle', [MerchantDepositController::class, 'settle'])->name('deposits.settle');
+            Route::post('/deposits/{deposit}/cancel', [MerchantDepositController::class, 'cancel'])->name('deposits.cancel');
+            Route::delete('/deposits/{deposit}', [MerchantDepositController::class, 'destroy'])->name('deposits.destroy');
         });
+
+        // Legacy / shortcut route alias without /admin prefix
+        Route::get('/deposits', fn() => redirect()->route('admin.deposits.index'));
+        Route::post('/deposits/{deposit}/settle', [MerchantDepositController::class, 'settle']);
+        Route::post('/deposits/{deposit}/confirm', [MerchantDepositController::class, 'confirm']);
+        Route::post('/deposits/{deposit}/cancel', [MerchantDepositController::class, 'cancel']);
 
         // Paket Voucher & Stok Management (Admin & Super Admin can view & add stock)
         Route::get('/packages', [VoucherPackageController::class, 'index'])->name('packages.index');

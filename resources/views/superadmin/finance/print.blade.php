@@ -84,23 +84,28 @@
                     Total Kas Masuk (Voucher + Kas Lain): <span class="font-mono text-emerald-800">Rp {{ number_format($totalCashIn, 0, ',', '.') }}</span>
                 </div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                     <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Setoran Voucher</span>
                     <span class="text-base font-extrabold font-mono text-slate-900 block mt-1">Rp {{ number_format($netOwnerRevenue, 0, ',', '.') }}</span>
-                    <span class="text-[10px] text-slate-400">{{ number_format($totalVouchersSold) }} lembar voucher</span>
+                    <span class="text-[10px] text-slate-400">{{ number_format($totalVouchersSold) }} lbr voucher</span>
                 </div>
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Setoran Saldo Mitra</span>
+                    <span class="text-base font-extrabold font-mono text-slate-900 block mt-1">Rp {{ number_format($depositRevenue, 0, ',', '.') }}</span>
+                    <span class="text-[10px] text-slate-400">{{ count($deposits->where('status', 'lunas')) }} transaksi saldo</span>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                     <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Pemasukan Lain</span>
                     <span class="text-base font-extrabold font-mono text-slate-900 block mt-1">Rp {{ number_format($otherIncome, 0, ',', '.') }}</span>
                     <span class="text-[10px] text-slate-400">{{ count($incomes) }} transaksi lain</span>
                 </div>
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                     <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Beban Operasional</span>
                     <span class="text-base font-extrabold font-mono text-slate-900 block mt-1">Rp {{ number_format($totalExpenses, 0, ',', '.') }}</span>
-                    <span class="text-[10px] text-slate-400">{{ count($expenses) }} pos pengeluaran</span>
+                    <span class="text-[10px] text-slate-400">{{ count($expenses) }} pos beban</span>
                 </div>
-                <div class="p-4 rounded-2xl {{ $netProfit >= 0 ? 'bg-blue-50/70 border-blue-200' : 'bg-rose-50/70 border-rose-200' }} border">
+                <div class="p-3.5 rounded-2xl {{ $netProfit >= 0 ? 'bg-blue-50/70 border-blue-200' : 'bg-rose-50/70 border-rose-200' }} border">
                     <span class="text-[10px] font-bold {{ $netProfit >= 0 ? 'text-blue-800' : 'text-rose-800' }} uppercase tracking-wider block">Laba Kas Bersih</span>
                     <span class="text-base font-extrabold font-mono {{ $netProfit >= 0 ? 'text-blue-900' : 'text-rose-900' }} block mt-1">Rp {{ number_format($netProfit, 0, ',', '.') }}</span>
                     <span class="text-[10px] {{ $netProfit >= 0 ? 'text-blue-600' : 'text-rose-600' }} font-bold">{{ $netProfit >= 0 ? 'Surplus Kas' : 'Defisit Kas' }}</span>
@@ -164,11 +169,66 @@
             </table>
         </div>
 
-        <!-- Tabel 2: Pemasukan Kas Lain-Lain (Terpisah) -->
+        <!-- Tabel 2: Pemasukan Saldo Cetak Mandiri -->
         <div class="space-y-3">
             <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                 <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                    <span class="w-5 h-5 rounded-md bg-sky-600 text-white flex items-center justify-center text-xs">2</span>
+                    <span class="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center text-xs">2</span>
+                    Pemasukan Saldo Cetak Mandiri
+                </h3>
+                <span class="text-xs font-mono font-bold text-slate-900">Kas Masuk: Rp {{ number_format($depositRevenue, 0, ',', '.') }}</span>
+            </div>
+
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-100 text-slate-700 font-bold border-y border-slate-200">
+                        <th class="py-2.5 px-3">Tanggal</th>
+                        <th class="py-2.5 px-3">No. Deposit</th>
+                        <th class="py-2.5 px-3">Mitra Warung</th>
+                        <th class="py-2.5 px-3 text-right">Nominal Saldo</th>
+                        <th class="py-2.5 px-3 text-center">Status</th>
+                        <th class="py-2.5 px-3 text-right">Kas Masuk Owner</th>
+                        <th class="py-2.5 px-3 text-right">Untung Mitra</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 text-slate-700">
+                    @forelse($deposits as $dep)
+                    <tr>
+                        <td class="py-2 px-3 text-slate-500 whitespace-nowrap">{{ $dep->deposit_date?->translatedFormat('d/m/Y') }}</td>
+                        <td class="py-2 px-3 font-mono font-bold text-slate-900">{{ $dep->deposit_number }}</td>
+                        <td class="py-2 px-3">{{ $dep->tenant->shop_name ?: $dep->tenant->name }}</td>
+                        <td class="py-2 px-3 text-right font-mono">Rp {{ number_format($dep->amount, 0, ',', '.') }}</td>
+                        <td class="py-2 px-3 text-center font-bold">
+                            {{ $dep->payment_type === 'tempo' ? 'Tempo' : 'Lunas' }} ({{ $dep->status_label }})
+                        </td>
+                        <td class="py-2 px-3 text-right font-mono font-bold text-slate-900">Rp {{ number_format($dep->actual_paid_amount, 0, ',', '.') }}</td>
+                        <td class="py-2 px-3 text-right font-mono text-blue-700">+Rp {{ number_format($dep->merchant_profit, 0, ',', '.') }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="7" class="py-4 text-center text-slate-400 italic">Tidak ada transaksi saldo merchant pada periode ini.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+                @if(count($deposits) > 0)
+                <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-300">
+                    <tr>
+                        <td colspan="3" class="py-2 px-3 uppercase">Total Kas Saldo Masuk</td>
+                        <td class="py-2 px-3 text-right font-mono">Rp {{ number_format($deposits->sum('amount'), 0, ',', '.') }}</td>
+                        <td></td>
+                        <td class="py-2 px-3 text-right font-mono font-bold text-slate-900">Rp {{ number_format($depositRevenue, 0, ',', '.') }}</td>
+                        <td class="py-2 px-3 text-right font-mono text-blue-700">+Rp {{ number_format($depositResellerProfit, 0, ',', '.') }}</td>
+                    </tr>
+                </tfoot>
+                @endif
+            </table>
+        </div>
+
+        <!-- Tabel 3: Pemasukan Kas Lain-Lain (Terpisah) -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-md bg-sky-600 text-white flex items-center justify-center text-xs">3</span>
                     Pemasukan Kas Lain-Lain (Iuran, Pasang Baru, Sewa Tiang, dll.)
                 </h3>
                 <span class="text-xs font-mono font-bold text-slate-900">Subtotal: Rp {{ number_format($otherIncome, 0, ',', '.') }}</span>
@@ -212,11 +272,11 @@
             </table>
         </div>
 
-        <!-- Tabel 3: Beban Pengeluaran Kas Operasional -->
+        <!-- Tabel 4: Beban Pengeluaran Kas Operasional -->
         <div class="space-y-3">
             <div class="flex items-center justify-between border-b border-slate-200 pb-2">
                 <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                    <span class="w-5 h-5 rounded-md bg-amber-600 text-white flex items-center justify-center text-xs">3</span>
+                    <span class="w-5 h-5 rounded-md bg-amber-600 text-white flex items-center justify-center text-xs">4</span>
                     Beban Pengeluaran Kas Operasional
                 </h3>
                 <span class="text-xs font-mono font-bold text-slate-900">Subtotal: Rp {{ number_format($totalExpenses, 0, ',', '.') }}</span>

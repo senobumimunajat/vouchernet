@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\Income;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
+use App\Models\MerchantDeposit;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Setting;
@@ -1831,6 +1832,343 @@ class VoucherNetTest extends TestCase
         // Cleanup
         $expense->delete();
         $item->update(['stock' => $initialStock]);
+    }
+
+    public function test_tenant_can_view_deposits_page_and_submit_deposit_request_tempo(): void
+    {
+        $tenant = User::where('role', 'tenant')->first();
+
+        // 1. Tenant views deposit page
+        $response = $this->actingAs($tenant)->get(route('tenant.deposits.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Beli Saldo Kuota Voucher');
+
+        // 2. Tenant submits request for Rp 500.000 (Konsinyasi/Tempo)
+        $postResp = $this->actingAs($tenant)->post(route('tenant.deposits.store'), [
+            'amount' => '500.000',
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'notes' => 'Akun warung_test',
+        ]);
+
+        $postResp->assertRedirect(route('tenant.deposits.index'));
+        $postResp->assertSessionHas('success');
+        $postResp->assertSessionHas('whatsapp_url');
+
+        $this->assertDatabaseHas('merchant_deposits', [
+            'tenant_id' => $tenant->id,
+            'amount' => 500000,
+            'payment_type' => 'tempo',
+            'status' => 'menunggu_konfirmasi',
+            'notes' => 'Akun warung_test',
+        ]);
+    }
+
+    public function test_admin_and_super_admin_can_view_deposits_and_confirm_topup(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $tenant = User::where('role', 'tenant')->first();
+
+        $deposit = MerchantDeposit::create([
+            'deposit_number' => 'DEP-TEST-CONFIRM-' . uniqid(),
+            'tenant_id' => $tenant->id,
+            'amount' => 300000,
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'status' => 'menunggu_konfirmasi',
+            'deposit_date' => date('Y-m-d'),
+            'created_by' => $tenant->id,
+        ]);
+
+        // 1. Admin views deposits
+        $viewResp = $this->actingAs($admin)->get(route('admin.deposits.index'));
+        $viewResp->assertStatus(200);
+        $viewResp->assertSee($deposit->deposit_number);
+
+        // 2. Admin confirms deposit topup
+        $confirmResp = $this->actingAs($admin)->post(route('admin.deposits.confirm', $deposit));
+        $confirmResp->assertSessionHas('success');
+
+        $deposit->refresh();
+        $this->assertEquals('tempo', $deposit->status);
+        $this->assertEquals($admin->id, $deposit->confirmed_by);
+        $this->assertNotNull($deposit->confirmed_at);
+
+        // Cleanup
+        $deposit->delete();
+    }
+
+    public function test_admin_can_settle_tempo_deposit_with_partial_payment_and_profit_calculation(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $tenant = User::where('role', 'tenant')->first();
+
+        $deposit = MerchantDeposit::create([
+            'deposit_number' => 'DEP-TEST-SETTLE-' . uniqid(),
+            'tenant_id' => $tenant->id,
+            'amount' => 500000,
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'status' => 'tempo',
+            'deposit_date' => date('Y-m-d'),
+            'created_by' => $tenant->id,
+        ]);
+
+        // Test GET to /admin/deposits/{deposit}/settle redirects gracefully to index
+        $getSettleResp = $this->actingAs($admin)->get('/admin/deposits/' . $deposit->id . '/settle');
+        $getSettleResp->assertRedirect(route('admin.deposits.index'));
+
+        // Admin settles deposit with Rp 455.000 paid (meaning Rp 45.000 profit for merchant)
+        $settleResp = $this->actingAs($admin)->post(route('admin.deposits.settle', $deposit), [
+            'actual_paid_amount' => '455.000',
+            'payment_method' => 'cash',
+            'settled_date' => date('Y-m-d'),
+            'settlement_notes' => 'Disetor tunai di posko',
+        ]);
+
+        $settleResp->assertSessionHas('success');
+
+        $deposit->refresh();
+        $this->assertEquals('lunas', $deposit->status);
+        $this->assertEquals(455000, (float) $deposit->actual_paid_amount);
+        $this->assertEquals(45000, (float) $deposit->merchant_profit);
+        $this->assertEquals($admin->id, $deposit->settled_by);
+        $this->assertNotNull($deposit->settled_at);
+
+        // Cleanup
+        $deposit->delete();
+    }
+
+    public function test_admin_can_record_direct_walk_in_deposit_lunas(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $tenant = User::where('role', 'tenant')->first();
+
+        $storeResp = $this->actingAs($admin)->post(route('admin.deposits.store'), [
+            'tenant_id' => $tenant->id,
+            'amount' => '200.000',
+            'payment_type' => 'lunas',
+            'payment_method' => 'cash',
+            'actual_paid_amount' => '200.000',
+            'deposit_date' => date('Y-m-d'),
+            'notes' => 'Beli saldo langsung bayar cash',
+        ]);
+
+        $storeResp->assertSessionHas('success');
+
+        $this->assertDatabaseHas('merchant_deposits', [
+            'tenant_id' => $tenant->id,
+            'amount' => 200000,
+            'payment_type' => 'lunas',
+            'status' => 'lunas',
+            'actual_paid_amount' => 200000,
+            'merchant_profit' => 0,
+        ]);
+    }
+
+    public function test_tenant_is_forbidden_from_admin_deposits(): void
+    {
+        $tenant = User::where('role', 'tenant')->first();
+        $this->actingAs($tenant)->get(route('admin.deposits.index'))->assertStatus(403);
+    }
+
+    public function test_finance_index_and_print_include_merchant_deposits_data_and_table(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+        $tenant = User::where('role', 'tenant')->first();
+
+        $deposit = MerchantDeposit::create([
+            'deposit_number' => 'DEP-FIN-TEST',
+            'tenant_id' => $tenant->id,
+            'amount' => 500000,
+            'payment_type' => 'lunas',
+            'payment_method' => 'cash',
+            'status' => 'lunas',
+            'actual_paid_amount' => 450000,
+            'merchant_profit' => 50000,
+            'deposit_date' => date('Y-m-d'),
+            'confirmed_by' => $superAdmin->id,
+            'confirmed_at' => now(),
+            'created_by' => $superAdmin->id,
+        ]);
+
+        $financeResp = $this->actingAs($superAdmin)->get(route('finance.index', [
+            'range_type' => 'month',
+            'month' => date('m'),
+            'year' => date('Y'),
+        ]));
+
+        $financeResp->assertStatus(200);
+        $financeResp->assertSee('Kas Setoran Saldo');
+        $financeResp->assertSee('Seksi 2: Pemasukan Saldo Cetak Mandiri');
+        $financeResp->assertSee('DEP-FIN-TEST');
+        $financeResp->assertSee('450.000');
+        $financeResp->assertSee('50.000');
+
+        $printResp = $this->actingAs($superAdmin)->get(route('finance.print', [
+            'range_type' => 'month',
+            'month' => date('m'),
+            'year' => date('Y'),
+        ]));
+
+        $printResp->assertStatus(200);
+        $printResp->assertSee('Pemasukan Saldo Cetak Mandiri');
+        $printResp->assertSee('DEP-FIN-TEST');
+        $printResp->assertSee('450.000');
+
+        $deposit->delete();
+    }
+
+    public function test_tenant_and_admin_can_view_deposit_invoice_and_receipt(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $tenant1 = User::where('role', 'tenant')->first();
+        $tenant2 = User::where('role', 'tenant')->where('id', '!=', $tenant1->id)->first();
+
+        // 0. Menunggu Konfirmasi: Faktur belum boleh terbit & tidak ada tombol faktur/kwitansi
+        $pendingDeposit = MerchantDeposit::create([
+            'deposit_number' => 'DEP-PENDING-TEST',
+            'tenant_id' => $tenant1->id,
+            'amount' => 250000,
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'status' => 'menunggu_konfirmasi',
+            'deposit_date' => date('Y-m-d'),
+            'created_by' => $tenant1->id,
+        ]);
+
+        $pendingInvoiceResp = $this->actingAs($tenant1)->get(route('deposits.invoice', $pendingDeposit));
+        $pendingInvoiceResp->assertSessionHas('error');
+
+        // Pastikan di tabel admin hanya ada tombol verifikasi, tidak ada faktur / kwitansi
+        $adminIndexResp = $this->actingAs($admin)->get(route('admin.deposits.index'));
+        $adminIndexResp->assertStatus(200);
+        $adminIndexResp->assertSee('Konfirmasi Saldo Diisi');
+        $adminIndexResp->assertSee('DEP-PENDING-TEST');
+
+        // 1. Tempo Deposit -> Shows Faktur Tagihan Saldo
+        $tempoDeposit = MerchantDeposit::create([
+            'deposit_number' => 'DEP-INV-TEST1',
+            'tenant_id' => $tenant1->id,
+            'amount' => 300000,
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'status' => 'tempo',
+            'deposit_date' => date('Y-m-d'),
+            'created_by' => $tenant1->id,
+            'confirmed_by' => $admin->id,
+            'confirmed_at' => now(),
+        ]);
+
+        $tenantResp = $this->actingAs($tenant1)->get(route('deposits.invoice', $tempoDeposit));
+        $tenantResp->assertStatus(200);
+        $tenantResp->assertSee('Faktur Tagihan Saldo');
+        $tenantResp->assertSee('INV-DEP-INV-TEST1');
+        $tenantResp->assertSee('300.000');
+        $tenantResp->assertSee('TEMPO');
+
+        // Other tenant cannot view tenant1's deposit invoice
+        if ($tenant2) {
+            $otherTenantResp = $this->actingAs($tenant2)->get(route('deposits.invoice', $tempoDeposit));
+            $otherTenantResp->assertStatus(403);
+        }
+
+        // 2. Lunas Deposit -> Shows Kwitansi Pelunasan Saldo
+        $tempoDeposit->update([
+            'status' => 'lunas',
+            'actual_paid_amount' => 280000,
+            'merchant_profit' => 20000,
+            'settled_by' => $admin->id,
+            'settled_at' => now(),
+        ]);
+
+        $receiptResp = $this->actingAs($tenant1)->get(route('deposits.invoice', $tempoDeposit));
+        $receiptResp->assertStatus(200);
+        $receiptResp->assertSee('Kwitansi Pelunasan Saldo');
+        $receiptResp->assertSee('KWT-DEP-INV-TEST1');
+        $receiptResp->assertSee('280.000');
+        $receiptResp->assertSee('20.000');
+        $receiptResp->assertSee('LUNAS');
+
+        // Admin can also view the receipt
+        $adminReceiptResp = $this->actingAs($admin)->get(route('deposits.invoice', $tempoDeposit));
+        $adminReceiptResp->assertStatus(200);
+        $adminReceiptResp->assertSee('Kwitansi Pelunasan Saldo');
+
+        $pendingDeposit->delete();
+        $tempoDeposit->delete();
+    }
+
+    public function test_admin_can_settle_tempo_deposit_via_transfer_with_optional_proof(): void
+    {
+        Storage::fake('public');
+        $admin = User::where('role', 'admin')->first();
+        $tenant = User::where('role', 'tenant')->first();
+
+        // 1. Pelunasan transfer TANPA upload bukti (opsional -> berhasil)
+        $deposit1 = MerchantDeposit::create([
+            'deposit_number' => 'DEP-TRF-OPT-1',
+            'tenant_id' => $tenant->id,
+            'amount' => 500000,
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'status' => 'tempo',
+            'deposit_date' => date('Y-m-d'),
+            'created_by' => $tenant->id,
+            'confirmed_by' => $admin->id,
+            'confirmed_at' => now(),
+        ]);
+
+        $settleResp1 = $this->actingAs($admin)->post(route('admin.deposits.settle', $deposit1), [
+            'actual_paid_amount' => '500.000',
+            'payment_method' => 'transfer',
+            'settled_date' => date('Y-m-d'),
+            'settlement_notes' => 'Transfer bank tanpa upload struk',
+        ]);
+
+        $settleResp1->assertSessionHas('success');
+        $deposit1->refresh();
+        $this->assertEquals('lunas', $deposit1->status);
+        $this->assertEquals('transfer', $deposit1->payment_method);
+        $this->assertNull($deposit1->payment_proof_file);
+
+        // 2. Pelunasan transfer DENGAN upload bukti struk transfer
+        $deposit2 = MerchantDeposit::create([
+            'deposit_number' => 'DEP-TRF-OPT-2',
+            'tenant_id' => $tenant->id,
+            'amount' => 400000,
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'status' => 'tempo',
+            'deposit_date' => date('Y-m-d'),
+            'created_by' => $tenant->id,
+            'confirmed_by' => $admin->id,
+            'confirmed_at' => now(),
+        ]);
+
+        $fakeProof = UploadedFile::fake()->image('bukti_transfer_bca.jpg', 600, 800);
+
+        $settleResp2 = $this->actingAs($admin)->post(route('admin.deposits.settle', $deposit2), [
+            'actual_paid_amount' => '380.000',
+            'payment_method' => 'transfer',
+            'payment_proof_file' => $fakeProof,
+            'settled_date' => date('Y-m-d'),
+            'settlement_notes' => 'Transfer BCA dengan bukti foto',
+        ]);
+
+        $settleResp2->assertSessionHas('success');
+        $deposit2->refresh();
+        $this->assertEquals('lunas', $deposit2->status);
+        $this->assertEquals('transfer', $deposit2->payment_method);
+        $this->assertNotNull($deposit2->payment_proof_file);
+        Storage::disk('public')->assertExists($deposit2->payment_proof_file);
+
+        // Pastikan halaman admin menampilkan link Bukti Transfer
+        $indexResp = $this->actingAs($admin)->get(route('admin.deposits.index'));
+        $indexResp->assertSee('Bukti Transfer');
+
+        $deposit1->delete();
+        $deposit2->delete();
     }
 }
 

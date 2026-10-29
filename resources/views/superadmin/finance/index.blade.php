@@ -146,14 +146,14 @@
                 </div>
             </div>
 
-            <!-- Rincian Pemasukan Disatukan (2 Sub-panel Sejajar) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
+            <!-- Rincian Pemasukan Disatukan (3 Sub-panel Sejajar) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100">
                 <!-- Sub-panel A: Kas Masuk Voucher -->
                 <div class="p-3 rounded-2xl bg-blue-50/50 border border-blue-100 flex flex-col justify-between">
                     <div class="flex items-center justify-between text-[11px] font-bold text-blue-900 mb-1">
                         <span class="flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-blue-600"></span>
-                            <span>Kas Masuk Voucher</span>
+                            <span>Kas Voucher</span>
                         </span>
                         <span class="text-[10px] text-blue-600 font-mono font-medium">{{ number_format($totalVouchersSold) }} lbr</span>
                     </div>
@@ -165,7 +165,24 @@
                     </div>
                 </div>
 
-                <!-- Sub-panel B: Pemasukan Kas Lain -->
+                <!-- Sub-panel B: Kas Masuk Saldo Merchant -->
+                <div class="p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-[11px] font-bold text-emerald-900 mb-1">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                            <span>Kas Setoran Saldo</span>
+                        </span>
+                        <span class="text-[10px] text-emerald-600 font-semibold">Cetak Mandiri</span>
+                    </div>
+                    <div class="text-base font-extrabold font-mono text-emerald-950">
+                        Rp {{ number_format($depositRevenue, 0, ',', '.') }}
+                    </div>
+                    <div class="text-[10px] text-emerald-700/80 mt-0.5 truncate" title="Untung Mitra: Rp {{ number_format($depositResellerProfit, 0, ',', '.') }}">
+                        Untung Mitra: Rp {{ number_format($depositResellerProfit, 0, ',', '.') }}
+                    </div>
+                </div>
+
+                <!-- Sub-panel C: Pemasukan Kas Lain -->
                 <div class="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 flex flex-col justify-between">
                     <div class="flex items-center justify-between text-[11px] font-bold text-sky-900 mb-1">
                         <span class="flex items-center gap-1.5">
@@ -178,7 +195,7 @@
                         Rp {{ number_format($otherIncome, 0, ',', '.') }}
                     </div>
                     <div class="text-[10px] text-sky-700/80 mt-0.5 truncate" title="Iuran warga, pasang baru, sewa tiang non-voucher">
-                        Iuran, pasang baru, sewa tiang
+                        Iuran, pasang baru, sewa
                     </div>
                 </div>
             </div>
@@ -302,9 +319,9 @@
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Piutang</span>
                     </div>
                     <div class="text-xl font-extrabold font-mono text-amber-900">
-                        Rp {{ number_format($pendingOwnerAmount, 0, ',', '.') }}
+                        Rp {{ number_format($pendingOwnerAmount + $pendingDepositAmount, 0, ',', '.') }}
                     </div>
-                    <p class="text-[11px] text-amber-700/90 font-medium">{{ number_format($pendingVouchersCount) }} lbr di {{ $pendingOrdersCount }} pesanan tempo</p>
+                    <p class="text-[11px] text-amber-700/90 font-medium">{{ number_format($pendingVouchersCount) }} lbr voucher{{ $pendingDepositAmount > 0 ? ' + Saldo Rp ' . number_format($pendingDepositAmount, 0, ',', '.') : '' }}</p>
                 </div>
 
                 <!-- 3. Perkiraan Total Pembayaran Warung (Jika Lunas Semua) -->
@@ -345,8 +362,8 @@
             <!-- ============================================== -->
             <!-- TAMPILAN GLOBAL (SEMUA WARUNG + KAS LAIN)      -->
             <!-- ============================================== -->
-            <!-- Rincian Komponen Arus Kas Masuk (4 Kolom Transparan) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- Rincian Komponen Arus Kas Masuk (5 Kolom Transparan) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 
                 <!-- Komponen A: Setoran Voucher Lunas -->
                 <div class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/70 space-y-1">
@@ -354,16 +371,16 @@
                     <div class="text-xl font-extrabold font-mono text-slate-900">
                         Rp {{ number_format($netOwnerRevenue, 0, ',', '.') }}
                     </div>
-                    <p class="text-[11px] text-slate-500">{{ number_format($totalVouchersSold) }} lbr sudah disetor</p>
+                    <p class="text-[11px] text-slate-500">{{ number_format($totalVouchersSold) }} lbr disetor</p>
                 </div>
 
                 <!-- Komponen B: Tagihan Tempo Warung (Piutang) -->
                 <div class="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/70 space-y-1">
                     <span class="text-[11px] font-bold uppercase tracking-wider text-amber-800 block">2. Tagihan Tempo Warung</span>
                     <div class="text-xl font-extrabold font-mono text-amber-900">
-                        +Rp {{ number_format($pendingOwnerAmount, 0, ',', '.') }}
+                        +Rp {{ number_format($pendingOwnerAmount + $pendingDepositAmount, 0, ',', '.') }}
                     </div>
-                    <p class="text-[11px] text-amber-700/90">{{ number_format($pendingVouchersCount) }} lbr ({{ $pendingOrdersCount }} pesanan)</p>
+                    <p class="text-[11px] text-amber-700/90">{{ number_format($pendingVouchersCount) }} lbr{{ $pendingDepositAmount > 0 ? ' + Saldo Rp ' . number_format($pendingDepositAmount, 0, ',', '.') : '' }}</p>
                 </div>
 
                 <!-- Komponen C: Pemasukan Kas Lain -->
@@ -375,13 +392,22 @@
                     <p class="text-[11px] text-sky-700/90">{{ $otherIncomesCount }} transaksi non-voucher</p>
                 </div>
 
-                <!-- Komponen D: Proyeksi Total Kas Masuk (1 + 2 + 3) -->
+                <!-- Komponen D: Setoran Saldo Cetak Mandiri -->
+                <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/70 space-y-1">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">Kas Saldo Cetak Mandiri</span>
+                    <div class="text-xl font-extrabold font-mono text-emerald-950">
+                        Rp {{ number_format($depositRevenue, 0, ',', '.') }}
+                    </div>
+                    <p class="text-[11px] text-emerald-700/90">Saldo Cetak Mandiri</p>
+                </div>
+
+                <!-- Komponen E: Proyeksi Total Kas Masuk -->
                 <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-200/70 space-y-1">
                     <span class="text-[11px] font-bold uppercase tracking-wider text-blue-900 block">Proyeksi Total Kas Masuk</span>
                     <div class="text-xl font-extrabold font-mono text-blue-950">
                         Rp {{ number_format($projectedTotalCashIn, 0, ',', '.') }}
                     </div>
-                    <p class="text-[11px] text-blue-700/90">Komponen 1 + 2 + 3</p>
+                    <p class="text-[11px] text-blue-700/90">Akumulasi Seluruh Komponen</p>
                 </div>
             </div>
 
@@ -993,14 +1019,188 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- SEKSI 2: PEMASUKAN KAS LAIN-LAIN (TERPISAH)-->
+    <!-- SEKSI 2: DEPOSIT & SALDO CETAK MANDIRI     -->
+    <!-- ========================================== -->
+    <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+            <div>
+                <h2 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    Seksi 2: Pemasukan Saldo Cetak Mandiri
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Setoran uang tunai/transfer dari mitra warung atas pembelian kuota saldo cetak voucher mandiri.</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-mono font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full">
+                    Kas Masuk: Rp {{ number_format($depositRevenue, 0, ',', '.') }}
+                </span>
+                @if($pendingDepositAmount > 0)
+                <span class="text-xs font-mono font-extrabold text-amber-700 bg-amber-50 border border-amber-200/60 px-3 py-1 rounded-full">
+                    Tempo: Rp {{ number_format($pendingDepositAmount, 0, ',', '.') }} ({{ $pendingDepositCount }})
+                </span>
+                @endif
+                <a href="{{ route('admin.deposits.index') }}" class="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Kelola Saldo Mitra</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[28px] border border-slate-200/70 overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+            <!-- Desktop View -->
+            <div class="hidden md:block overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50/80 border-b border-slate-200/70 text-slate-600 font-bold text-[11px] uppercase tracking-wider">
+                            <th class="py-3.5 px-5">No. Deposit</th>
+                            <th class="py-3.5 px-5">Tanggal</th>
+                            <th class="py-3.5 px-5">Mitra Warung</th>
+                            <th class="py-3.5 px-5">Nominal Saldo</th>
+                            <th class="py-3.5 px-5">Sistem & Status</th>
+                            <th class="py-3.5 px-5">Kas Masuk Owner</th>
+                            <th class="py-3.5 px-5 text-right">Untung Mitra</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        @forelse($recentDeposits as $dep)
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="py-3.5 px-5 font-mono font-bold text-slate-900">
+                                @if(in_array($dep->status, ['lunas', 'tempo']))
+                                <a href="{{ route('deposits.invoice', $dep) }}" target="_blank" class="hover:text-blue-600 hover:underline flex items-center gap-1.5" title="Buka Dokumen Bukti">
+                                    <span>{{ $dep->deposit_number }}</span>
+                                    <span class="text-[9px] px-1.5 py-0.2 rounded font-sans font-bold {{ $dep->status === 'lunas' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
+                                        {{ $dep->status === 'lunas' ? 'Kwitansi' : 'Faktur' }}
+                                    </span>
+                                </a>
+                                @else
+                                <span>{{ $dep->deposit_number }}</span>
+                                @endif
+                            </td>
+                            <td class="py-3.5 px-5 text-slate-500 font-medium">{{ $dep->deposit_date->translatedFormat('d M Y') }}</td>
+                            <td class="py-3.5 px-5 font-semibold text-slate-900">
+                                {{ $dep->tenant->shop_name ?: $dep->tenant->name }}
+                                <span class="block text-[11px] text-slate-400 font-normal">{{ '@' . $dep->tenant->username }}</span>
+                            </td>
+                            <td class="py-3.5 px-5 font-mono font-bold text-slate-900">
+                                Rp {{ number_format($dep->amount, 0, ',', '.') }}
+                            </td>
+                            <td class="py-3.5 px-5">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $dep->payment_type === 'tempo' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-700' }}">
+                                        {{ $dep->payment_type === 'tempo' ? 'Konsinyasi (Tempo)' : 'Bayar Lunas' }}
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ $dep->status_badge_class }}">
+                                        {{ $dep->status_label }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-5 font-mono font-extrabold {{ $dep->actual_paid_amount > 0 ? 'text-emerald-700' : 'text-slate-400' }}">
+                                Rp {{ number_format($dep->actual_paid_amount, 0, ',', '.') }}
+                            </td>
+                            <td class="py-3.5 px-5 font-mono text-right font-bold text-blue-600">
+                                @if($dep->merchant_profit > 0)
+                                +Rp {{ number_format($dep->merchant_profit, 0, ',', '.') }}
+                                @else
+                                <span class="text-slate-400 font-normal">-</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-slate-400 font-medium">Belum ada transaksi deposit saldo merchant pada periode ini.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                    @if($recentDeposits->count() > 0)
+                    <tfoot class="bg-slate-50 border-t-2 border-slate-200 text-xs font-extrabold text-slate-900">
+                        <tr>
+                            <td colspan="3" class="py-3.5 px-5 text-slate-700 uppercase tracking-wider">
+                                TOTAL REALISASI KAS SALDO (PERIODE INI)
+                                @if($recentDepositsCount > $recentDeposits->count())
+                                    <span class="text-[10px] font-normal text-slate-400 lowercase font-medium">(menampilkan 10 dari {{ $recentDepositsCount }} data)</span>
+                                @endif
+                            </td>
+                            <td class="py-3.5 px-5 font-mono text-slate-800">
+                                Rp {{ number_format($recentDeposits->sum('amount'), 0, ',', '.') }}
+                            </td>
+                            <td class="py-3.5 px-5"></td>
+                            <td class="py-3.5 px-5 font-mono font-extrabold text-emerald-800 text-sm">
+                                Rp {{ number_format($depositRevenue, 0, ',', '.') }}
+                            </td>
+                            <td class="py-3.5 px-5 font-mono text-right font-bold text-blue-700">
+                                +Rp {{ number_format($depositResellerProfit, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                    @endif
+                </table>
+            </div>
+
+            <!-- Mobile View (Adaptive Stacked Cards) -->
+            <div class="md:hidden divide-y divide-slate-100">
+                @forelse($recentDeposits as $dep)
+                <div class="p-4 space-y-2 hover:bg-slate-50/50 transition-colors">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-bold text-slate-900 block">{{ $dep->tenant->shop_name ?: $dep->tenant->name }}</span>
+                            @if(in_array($dep->status, ['lunas', 'tempo']))
+                            <a href="{{ route('deposits.invoice', $dep) }}" target="_blank" class="text-[10px] text-blue-600 hover:underline font-mono inline-block">
+                                {{ $dep->deposit_number }} • {{ $dep->status === 'lunas' ? '🧾 Kwitansi ↗' : '📄 Faktur ↗' }}
+                            </a>
+                            @else
+                            <span class="text-[10px] text-slate-700 font-mono inline-block">{{ $dep->deposit_number }}</span>
+                            @endif
+                            <span class="text-[10px] text-slate-400 block">{{ $dep->deposit_date->translatedFormat('d M Y') }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-mono font-extrabold {{ $dep->actual_paid_amount > 0 ? 'text-emerald-700' : 'text-slate-500' }} text-sm block">
+                                Rp {{ number_format($dep->actual_paid_amount, 0, ',', '.') }}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ $dep->status_badge_class }}">
+                                {{ $dep->status_label }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="pt-1 flex items-center justify-between text-xs border-t border-slate-100">
+                        <span class="text-slate-500 text-[11px]">
+                            Saldo: <strong class="font-mono text-slate-800">Rp {{ number_format($dep->amount, 0, ',', '.') }}</strong>
+                            ({{ $dep->payment_type === 'tempo' ? 'Tempo' : 'Lunas' }})
+                        </span>
+                        @if($dep->merchant_profit > 0)
+                        <span class="text-blue-600 font-mono font-bold text-[11px]">
+                            Mitra: +Rp {{ number_format($dep->merchant_profit, 0, ',', '.') }}
+                        </span>
+                        @endif
+                    </div>
+                </div>
+                @empty
+                <div class="p-6 text-center text-slate-400 text-xs">Belum ada transaksi deposit saldo merchant.</div>
+                @endforelse
+
+                @if($recentDeposits->count() > 0)
+                <div class="p-4 bg-slate-50/95 border-t-2 border-slate-200 flex items-center justify-between text-xs">
+                    <div>
+                        <span class="font-bold text-slate-700 uppercase tracking-wider text-[10px] block">Total Kas Saldo Masuk</span>
+                        @if($recentDepositsCount > $recentDeposits->count())
+                            <span class="text-[10px] text-slate-400 font-normal">10 dari {{ $recentDepositsCount }} data</span>
+                        @endif
+                    </div>
+                    <span class="font-mono font-extrabold text-emerald-700 text-sm">Rp {{ number_format($depositRevenue, 0, ',', '.') }}</span>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SEKSI 3: PEMASUKAN KAS LAIN-LAIN (TERPISAH)-->
     <!-- ========================================== -->
     <div class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
             <div>
                 <h2 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
-                    Seksi 2: Pemasukan Kas Lain-Lain (Di Luar Voucher)
+                    Seksi 3: Pemasukan Kas Lain-Lain (Di Luar Voucher)
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">Iuran bulanan warga, biaya pasang baru, sewa tiang/port, atau pemasukan non-voucher lainnya.</p>
             </div>
@@ -1111,14 +1311,14 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- SEKSI 3: BEBAN PENGELUARAN KAS OPERASIONAL -->
+    <!-- SEKSI 4: BEBAN PENGELUARAN KAS OPERASIONAL -->
     <!-- ========================================== -->
     <div class="space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
             <div>
                 <h2 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                    Seksi 3: Beban Pengeluaran Kas Operasional
+                    Seksi 4: Beban Pengeluaran Kas Operasional
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">Biaya bandwidth ISP, tagihan listrik, perbaikan tiang/kabel FO, dan transport operasional.</p>
             </div>

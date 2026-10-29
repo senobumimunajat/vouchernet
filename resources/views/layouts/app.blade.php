@@ -188,6 +188,13 @@
             <a href="{{ route('admin.orders.create_offline') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold {{ request()->routeIs('admin.orders.create_offline') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70' : 'text-slate-700 hover:bg-slate-100' }}">
                 Input Order Offline
             </a>
+            <a href="{{ route('admin.deposits.index') }}" class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold {{ request()->routeIs('admin.deposits.*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70' : 'text-slate-700 hover:bg-slate-100' }}">
+                <span>Deposit Saldo Mitra</span>
+                @php $mDepPending = \App\Models\MerchantDeposit::where('status', 'menunggu_konfirmasi')->count(); @endphp
+                @if($mDepPending > 0)
+                <span class="px-2 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded-full">{{ $mDepPending }}</span>
+                @endif
+            </a>
             <a href="{{ route('packages.index') }}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold {{ request()->routeIs('packages.*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70' : 'text-slate-700 hover:bg-slate-100' }}">
                 Stok & Paket Voucher
             </a>
@@ -278,6 +285,17 @@
                 <a href="{{ route('admin.orders.create_offline') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-medium transition-all {{ request()->routeIs('admin.orders.create_offline') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                     <svg class="w-4 h-4 {{ request()->routeIs('admin.orders.create_offline') ? 'text-blue-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Input Order Offline
+                </a>
+
+                <a href="{{ route('admin.deposits.index') }}" class="flex items-center justify-between px-3 py-2.5 rounded-2xl font-medium transition-all {{ request()->routeIs('admin.deposits.*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <span class="flex items-center gap-3">
+                        <svg class="w-4 h-4 {{ request()->routeIs('admin.deposits.*') ? 'text-blue-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Deposit Saldo Mitra
+                    </span>
+                    @php $depPendingCount = \App\Models\MerchantDeposit::where('status', 'menunggu_konfirmasi')->count(); @endphp
+                    @if($depPendingCount > 0)
+                    <span class="px-2 py-0.5 text-xs font-bold bg-blue-600 text-white rounded-full">{{ $depPendingCount }}</span>
+                    @endif
                 </a>
 
                 <a href="{{ route('packages.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-2xl font-medium transition-all {{ request()->routeIs('packages.*') ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/70 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">

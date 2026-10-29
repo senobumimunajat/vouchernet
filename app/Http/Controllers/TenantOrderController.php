@@ -35,10 +35,14 @@ class TenantOrderController extends Controller
             ->where('status', 'menunggu_pembayaran')
             ->sum('quantity');
 
-        // 2. Total Nominal Tagihan yang HARUS DISETORKAN ke Admin
-        $pendingBillAmount = (float) Order::where('tenant_id', $user->id)
+        // 2. Total Nominal Tagihan yang HARUS DISETORKAN ke Admin (Voucher + Saldo Tempo)
+        $pendingVoucherBill = (float) Order::where('tenant_id', $user->id)
             ->where('status', 'menunggu_pembayaran')
             ->sum('total_owner_amount');
+        $pendingDepositBill = (float) \App\Models\MerchantDeposit::where('tenant_id', $user->id)
+            ->where('status', 'tempo')
+            ->sum('amount');
+        $pendingBillAmount = $pendingVoucherBill + $pendingDepositBill;
 
         // 3. Total Voucher yang Sudah Disetor (Lunas)
         $paidVouchersCount = (int) Order::where('tenant_id', $user->id)
@@ -54,10 +58,14 @@ class TenantOrderController extends Controller
             ->whereIn('status', ['lunas', 'menunggu_pembayaran'])
             ->sum('quantity');
 
-        // 5. Total Untung Reseller yang Didapat dari Voucher Lunas
-        $totalProfitEarned = (float) Order::where('tenant_id', $user->id)
+        // 5. Total Untung Reseller yang Didapat dari Voucher Lunas & Saldo Lunas
+        $voucherProfitEarned = (float) Order::where('tenant_id', $user->id)
             ->where('status', 'lunas')
             ->sum('total_reseller_profit');
+        $depositProfitEarned = (float) \App\Models\MerchantDeposit::where('tenant_id', $user->id)
+            ->where('status', 'lunas')
+            ->sum('merchant_profit');
+        $totalProfitEarned = $voucherProfitEarned + $depositProfitEarned;
 
         // 6. Potensi Keuntungan dari Voucher yang Sedang Dibawa
         $pendingProfitPotential = (float) Order::where('tenant_id', $user->id)

@@ -59,4 +59,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class, 'confirmed_by');
     }
+
+    public function deposits()
+    {
+        return $this->hasMany(MerchantDeposit::class, 'tenant_id');
+    }
 }
