@@ -1713,6 +1713,15 @@ class VoucherNetTest extends TestCase
         $movementsResp = $this->actingAs($superAdmin)->get(route('inventory.index', ['tab' => 'movements']));
         $movementsResp->assertSee($code);
         $movementsResp->assertSee('Dihapus');
+
+        // Cannot cancel movement for deleted item
+        $cancelTrashedResp = $this->actingAs($superAdmin)->delete(route('inventory.movements.destroy', $movement));
+        $cancelTrashedResp->assertSessionHasErrors(['message']);
+
+        // Admin is strictly forbidden from canceling any movement
+        $admin = User::where('role', 'admin')->first();
+        $adminCancelResp = $this->actingAs($admin)->delete(route('inventory.movements.destroy', $movement));
+        $adminCancelResp->assertStatus(403);
     }
 }
 

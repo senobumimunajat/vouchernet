@@ -354,7 +354,17 @@ class InventoryController extends Controller
      */
     public function destroyMovement(InventoryMovement $movement)
     {
+        if (!Auth::user()->isSuperAdmin()) {
+            abort(403, 'Hanya Super Admin yang berhak membatalkan catatan mutasi.');
+        }
+
         $item = $movement->item;
+
+        if (!$item || $item->trashed()) {
+            return back()->withErrors([
+                'message' => 'Catatan mutasi ini tidak dapat dibatalkan karena master barang sudah dihapus dari katalog.',
+            ]);
+        }
 
         if ($movement->type === 'in') {
             if ($item->stock < $movement->quantity) {

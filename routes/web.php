@@ -77,11 +77,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('/inventory/items/{item}', [InventoryController::class, 'destroyItem'])->name('inventory.items.destroy');
         Route::post('/inventory/movements/in', [InventoryController::class, 'storeStockIn'])->name('inventory.movements.in');
         Route::post('/inventory/movements/out', [InventoryController::class, 'storeStockOut'])->name('inventory.movements.out');
-        Route::delete('/inventory/movements/{movement}', [InventoryController::class, 'destroyMovement'])->name('inventory.movements.destroy');
     });
 
-    // 3. SUPER ADMIN EXCLUSIVE ROUTES (Keuangan, Approve Hapus, Paket Voucher CRUD, Reset Password)
+    // 3. SUPER ADMIN EXCLUSIVE ROUTES (Keuangan, Approve Hapus, Paket Voucher CRUD, Reset Password, Batal Mutasi)
     Route::middleware('role:super_admin')->group(function () {
+        // Batal Mutasi Inventaris (Khusus Super Admin)
+        Route::delete('/inventory/movements/{movement}', [InventoryController::class, 'destroyMovement'])->name('inventory.movements.destroy');
         // Approvals (Review & Approve/Reject Hapus Bayar)
         Route::get('/approvals', [SuperAdminApprovalController::class, 'index'])->name('approvals.index');
         Route::post('/approvals/{order}/approve', [SuperAdminApprovalController::class, 'approve'])->name('approvals.approve');

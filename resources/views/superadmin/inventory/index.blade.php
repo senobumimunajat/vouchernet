@@ -523,6 +523,9 @@
                             </td>
                             @if(auth()->user()->isSuperAdmin())
                             <td class="py-3.5 px-4 text-right">
+                                @if(!$m->item || $m->item->trashed())
+                                <span class="text-slate-300 font-mono text-xs cursor-not-allowed" title="Master barang sudah dihapus">-</span>
+                                @else
                                 <form action="{{ route('inventory.movements.destroy', $m) }}" method="POST" onsubmit="return confirm('Batalkan catatan mutasi ini dan kembalikan stok fisik?');" class="inline">
                                     @csrf
                                     @method('DELETE')
@@ -530,6 +533,7 @@
                                         Batal
                                     </button>
                                 </form>
+                                @endif
                             </td>
                             @endif
                         </tr>
@@ -597,11 +601,15 @@
                         </span>
 
                         @if(auth()->user()->isSuperAdmin())
+                        @if(!$m->item || $m->item->trashed())
+                        <span class="text-slate-300 font-mono text-xs">-</span>
+                        @else
                         <form action="{{ route('inventory.movements.destroy', $m) }}" method="POST" onsubmit="return confirm('Batalkan mutasi ini?');" class="inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-rose-600 hover:text-rose-800 font-bold text-[11px] py-1 px-2">Batalkan</button>
                         </form>
+                        @endif
                         @endif
                     </div>
                 </div>
