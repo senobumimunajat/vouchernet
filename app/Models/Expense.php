@@ -40,7 +40,7 @@ class Expense extends Model
 
     public function inventoryItem()
     {
-        return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
+        return $this->belongsTo(InventoryItem::class, 'inventory_item_id')->withTrashed();
     }
 
     public function inventoryMovements()

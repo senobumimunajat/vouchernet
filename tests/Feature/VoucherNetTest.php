@@ -1677,11 +1677,41 @@ class VoucherNetTest extends TestCase
         $failResp->assertSessionHasErrors(['message']);
         $this->assertDatabaseHas('inventory_items', ['id' => $itemWithStock->id]);
 
-        // 2. Item with stock 0 can be deleted successfully
+        // 2. Add a movement log to this item
+        $movement = InventoryMovement::create([
+            'inventory_item_id' => $itemWithStock->id,
+            'type' => 'in',
+            'quantity' => 5,
+            'stock_before' => 0,
+            'stock_after' => 5,
+            'purpose' => 'Pengadaan Awal Perangkat',
+            'movement_date' => date('Y-m-d'),
+            'created_by' => $superAdmin->id,
+        ]);
+
+        // 3. Item with stock 0 can be deleted (soft deleted)
         $itemWithStock->update(['stock' => 0]);
         $successResp = $this->actingAs($superAdmin)->delete(route('inventory.items.destroy', $itemWithStock));
         $successResp->assertSessionHas('success');
-        $this->assertDatabaseMissing('inventory_items', ['id' => $itemWithStock->id]);
+
+        // Item is soft deleted (disappears from active queries)
+        $this->assertSoftDeleted('inventory_items', ['id' => $itemWithStock->id]);
+
+        // BUT its movement log remains 100% preserved in database!
+        $this->assertDatabaseHas('inventory_movements', [
+            'id' => $movement->id,
+            'inventory_item_id' => $itemWithStock->id,
+            'purpose' => 'Pengadaan Awal Perangkat',
+        ]);
+
+        // In cards grid, item is gone
+        $cardsResp = $this->actingAs($superAdmin)->get(route('inventory.index', ['tab' => 'items']));
+        $cardsResp->assertDontSee('DEL-001');
+
+        // In movements log, movement history is still visible with '(Dihapus)' badge
+        $movementsResp = $this->actingAs($superAdmin)->get(route('inventory.index', ['tab' => 'movements']));
+        $movementsResp->assertSee('DEL-001');
+        $movementsResp->assertSee('Dihapus');
     }
 }
 

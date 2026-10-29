@@ -272,7 +272,7 @@ class InventoryController extends Controller
         $item->delete();
 
         return redirect()->route('inventory.index', ['tab' => 'items'])
-            ->with('success', "Barang '{$name}' berhasil dihapus dari inventaris.");
+            ->with('success', "Barang '{$name}' berhasil dihapus dari inventaris. Seluruh catatan riwayat mutasi tetap tersimpan.");
     }
 
     /**

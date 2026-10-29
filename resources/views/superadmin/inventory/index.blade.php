@@ -471,7 +471,12 @@
                                     <img src="{{ $m->item->photo_url }}" alt="{{ $m->item->name }}" class="w-8 h-8 rounded-lg object-cover border border-slate-100 shrink-0">
                                     @endif
                                     <div>
-                                        <span class="font-bold text-slate-900 block">{{ $m->item->name ?? '-' }}</span>
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="font-bold text-slate-900 block">{{ $m->item->name ?? '-' }}</span>
+                                            @if($m->item && $m->item->trashed())
+                                            <span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[9px] font-semibold">Dihapus</span>
+                                            @endif
+                                        </div>
                                         <span class="text-[10px] font-mono text-slate-400">{{ $m->item->item_code ?? '' }}</span>
                                     </div>
                                 </div>
@@ -548,7 +553,12 @@
                             <img src="{{ $m->item->photo_url }}" alt="{{ $m->item->name }}" class="w-9 h-9 rounded-lg object-cover border border-slate-100 shrink-0">
                             @endif
                             <div>
-                                <span class="font-bold text-slate-900 text-xs block">{{ $m->item->name ?? '-' }}</span>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-bold text-slate-900 text-xs block">{{ $m->item->name ?? '-' }}</span>
+                                    @if($m->item && $m->item->trashed())
+                                    <span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[9px] font-semibold">Dihapus</span>
+                                    @endif
+                                </div>
                                 <span class="text-[10px] text-slate-400 font-mono">{{ $m->movement_date->translatedFormat('d M Y') }} • {{ $m->created_at->format('H:i') }}</span>
                             </div>
                         </div>
