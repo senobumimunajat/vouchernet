@@ -1657,6 +1657,32 @@ class VoucherNetTest extends TestCase
         $item->movements()->delete();
         $item->delete();
     }
+
+    public function test_inventory_item_can_only_be_deleted_when_stock_is_zero(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        // 1. Item with stock > 0 cannot be deleted
+        $itemWithStock = InventoryItem::create([
+            'item_code' => 'DEL-001',
+            'name' => 'Barang Ada Stok',
+            'category' => 'Umum',
+            'unit' => 'unit',
+            'stock' => 5,
+            'min_stock' => 0,
+            'is_active' => true,
+        ]);
+
+        $failResp = $this->actingAs($superAdmin)->delete(route('inventory.items.destroy', $itemWithStock));
+        $failResp->assertSessionHasErrors(['message']);
+        $this->assertDatabaseHas('inventory_items', ['id' => $itemWithStock->id]);
+
+        // 2. Item with stock 0 can be deleted successfully
+        $itemWithStock->update(['stock' => 0]);
+        $successResp = $this->actingAs($superAdmin)->delete(route('inventory.items.destroy', $itemWithStock));
+        $successResp->assertSessionHas('success');
+        $this->assertDatabaseMissing('inventory_items', ['id' => $itemWithStock->id]);
+    }
 }
 
 

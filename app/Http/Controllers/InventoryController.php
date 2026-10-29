@@ -258,9 +258,9 @@ class InventoryController extends Controller
 
     public function destroyItem(InventoryItem $item)
     {
-        if ($item->expenses()->exists() || $item->movements()->count() > 1) {
+        if ($item->stock > 0) {
             return back()->withErrors([
-                'message' => "Barang '{$item->name}' tidak dapat dihapus karena sudah memiliki riwayat mutasi / terhubung ke catatan pengeluaran kas. Anda dapat menonaktifkannya melalui tombol Edit.",
+                'message' => "Barang '{$item->name}' tidak dapat dihapus karena masih memiliki stok fisik sebanyak {$item->stock} {$item->unit}. Penghapusan hanya dapat dilakukan jika sisa stok sudah 0.",
             ]);
         }
 

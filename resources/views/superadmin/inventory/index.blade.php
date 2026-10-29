@@ -952,9 +952,12 @@
             </div>
 
             <div class="pt-3 flex justify-between items-center border-t border-slate-100">
-                <button type="button" onclick="confirmDeleteCurrentItem()" class="text-rose-600 hover:text-rose-800 font-bold text-xs transition-colors py-2">
-                    Hapus Barang
-                </button>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" id="deleteItemBtn" onclick="confirmDeleteCurrentItem()" class="text-rose-600 hover:text-rose-800 font-bold text-xs transition-colors py-2 flex items-center gap-1">
+                        Hapus Barang
+                    </button>
+                    <span id="deleteItemNotice" class="text-[10px] text-slate-400 hidden">(Hanya jika stok 0)</span>
+                </div>
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="closeEditItemModal()" class="px-4 py-2.5 rounded-full text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Batal</button>
                     <button type="submit" class="px-5 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 font-bold text-xs shadow-sm shadow-blue-500/20 active:scale-[0.98] transition-all">
@@ -1077,9 +1080,11 @@
         document.getElementById('stockOutModal').classList.add('hidden');
     }
 
+    let currentEditingItem = null;
     let currentEditingItemId = null;
 
     function openEditItemModal(item) {
+        currentEditingItem = item;
         currentEditingItemId = item.id;
         document.getElementById('editItemCodeDisplay').textContent = item.item_code;
         document.getElementById('editName').value = item.name;
@@ -1090,6 +1095,18 @@
         document.getElementById('editLocation').value = item.location || '';
         document.getElementById('editDescription').value = item.description || '';
         document.getElementById('editIsActive').checked = Boolean(item.is_active);
+
+        // Deletion only allowed if stock is 0
+        const deleteBtn = document.getElementById('deleteItemBtn');
+        const deleteNotice = document.getElementById('deleteItemNotice');
+        if (item.stock > 0) {
+            deleteBtn.classList.add('opacity-40');
+            deleteNotice.textContent = '(Stok: ' + item.stock + ' ' + item.unit + ', belum 0)';
+            deleteNotice.classList.remove('hidden');
+        } else {
+            deleteBtn.classList.remove('opacity-40');
+            deleteNotice.classList.add('hidden');
+        }
 
         // Photo preview handling
         const img = document.getElementById('editPhotoImg');
@@ -1147,7 +1164,12 @@
     }
 
     function confirmDeleteCurrentItem() {
-        if (confirm('Hapus master barang ini dari inventaris? (Hanya dapat dihapus jika belum memiliki riwayat mutasi/pengeluaran)')) {
+        if (!currentEditingItem) return;
+        if (currentEditingItem.stock > 0) {
+            alert('Barang "' + currentEditingItem.name + '" tidak dapat dihapus karena masih memiliki sisa stok sebanyak ' + currentEditingItem.stock + ' ' + currentEditingItem.unit + '.\n\nPenghapusan master barang hanya dapat dilakukan jika sisa stok sudah 0.');
+            return;
+        }
+        if (confirm('Hapus master barang "' + currentEditingItem.name + '" dari inventaris?\n\nTindakan ini akan menghapus data barang secara permanen.')) {
             document.getElementById('deleteItemForm').submit();
         }
     }
