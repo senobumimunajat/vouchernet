@@ -1661,10 +1661,11 @@ class VoucherNetTest extends TestCase
     public function test_inventory_item_can_only_be_deleted_when_stock_is_zero(): void
     {
         $superAdmin = User::where('role', 'super_admin')->first();
+        $code = 'DEL-' . strtoupper(\Illuminate\Support\Str::random(6));
 
         // 1. Item with stock > 0 cannot be deleted
         $itemWithStock = InventoryItem::create([
-            'item_code' => 'DEL-001',
+            'item_code' => $code,
             'name' => 'Barang Ada Stok',
             'category' => 'Umum',
             'unit' => 'unit',
@@ -1706,11 +1707,11 @@ class VoucherNetTest extends TestCase
 
         // In cards grid, item is gone
         $cardsResp = $this->actingAs($superAdmin)->get(route('inventory.index', ['tab' => 'items']));
-        $cardsResp->assertDontSee('DEL-001');
+        $cardsResp->assertDontSee($code);
 
         // In movements log, movement history is still visible with '(Dihapus)' badge
         $movementsResp = $this->actingAs($superAdmin)->get(route('inventory.index', ['tab' => 'movements']));
-        $movementsResp->assertSee('DEL-001');
+        $movementsResp->assertSee($code);
         $movementsResp->assertSee('Dihapus');
     }
 }
