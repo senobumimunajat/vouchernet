@@ -7,6 +7,7 @@ use App\Models\InventoryMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class InventoryController extends Controller
 {
@@ -155,12 +156,18 @@ class InventoryController extends Controller
             'unit_price' => ['nullable', 'numeric', 'min:0'],
             'location' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ]);
 
         $itemCode = InventoryItem::generateCode($validated['category']);
         $initialStock = (int) ($validated['initial_stock'] ?? 0);
 
-        DB::transaction(function () use ($validated, $itemCode, $initialStock, &$item) {
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('inventory_photos', 'public');
+        }
+
+        DB::transaction(function () use ($validated, $itemCode, $initialStock, $photoPath, &$item) {
             $item = InventoryItem::create([
                 'item_code' => $itemCode,
                 'name' => $validated['name'],
@@ -171,6 +178,7 @@ class InventoryController extends Controller
                 'unit_price' => !empty($validated['unit_price']) ? (float) $validated['unit_price'] : null,
                 'location' => $validated['location'] ?? null,
                 'description' => $validated['description'] ?? null,
+                'photo' => $photoPath,
                 'is_active' => true,
             ]);
 
@@ -206,8 +214,22 @@ class InventoryController extends Controller
             'unit_price' => ['nullable', 'numeric', 'min:0'],
             'location' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:500'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'remove_photo' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if ($request->boolean('remove_photo') && $item->photo) {
+            Storage::disk('public')->delete($item->photo);
+            $item->photo = null;
+        }
+
+        if ($request->hasFile('photo')) {
+            if ($item->photo) {
+                Storage::disk('public')->delete($item->photo);
+            }
+            $item->photo = $request->file('photo')->store('inventory_photos', 'public');
+        }
 
         $item->update([
             'name' => $validated['name'],
@@ -230,6 +252,10 @@ class InventoryController extends Controller
             return back()->withErrors([
                 'message' => "Barang '{$item->name}' tidak dapat dihapus karena sudah memiliki riwayat mutasi / terhubung ke catatan pengeluaran kas. Anda dapat menonaktifkannya melalui tombol Edit.",
             ]);
+        }
+
+        if ($item->photo) {
+            Storage::disk('public')->delete($item->photo);
         }
 
         $name = $item->name;

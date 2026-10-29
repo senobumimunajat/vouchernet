@@ -1567,6 +1567,69 @@ class VoucherNetTest extends TestCase
         $expense->delete();
         $newItem->delete();
     }
+
+    public function test_admin_and_super_admin_can_upload_and_update_inventory_photo(): void
+    {
+        Storage::fake('public');
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        $photoFile = UploadedFile::fake()->image('router-mikrotik.png', 400, 300);
+
+        // 1. Create item with photo upload
+        $response = $this->actingAs($superAdmin)->post(route('inventory.items.store'), [
+            'name' => 'Router Baru Foto Test ' . rand(100, 999),
+            'category' => 'Router & Gateway',
+            'unit' => 'unit',
+            'initial_stock' => 10,
+            'min_stock' => 2,
+            'unit_price' => '850.000',
+            'location' => 'Gudang Posko',
+            'description' => 'Router test upload foto',
+            'photo' => $photoFile,
+        ]);
+
+        $response->assertSessionHas('success');
+        $item = InventoryItem::latest('id')->first();
+        $this->assertNotNull($item->photo);
+        $this->assertNotNull($item->photo_url);
+        Storage::disk('public')->assertExists($item->photo);
+
+        // 2. Index renders card with photo
+        $indexResp = $this->actingAs($superAdmin)->get(route('inventory.index'));
+        $indexResp->assertStatus(200);
+        $indexResp->assertSee($item->photo_url);
+
+        // 3. Update with new photo
+        $newPhotoFile = UploadedFile::fake()->image('router-new.png', 400, 300);
+        $oldPhoto = $item->photo;
+        $upResp = $this->actingAs($superAdmin)->put(route('inventory.items.update', $item), [
+            'name' => $item->name,
+            'category' => $item->category,
+            'unit' => $item->unit,
+            'min_stock' => $item->min_stock,
+            'photo' => $newPhotoFile,
+        ]);
+        $upResp->assertSessionHas('success');
+        $item->refresh();
+        Storage::disk('public')->assertMissing($oldPhoto);
+        Storage::disk('public')->assertExists($item->photo);
+
+        // 4. Remove photo
+        $removeResp = $this->actingAs($superAdmin)->put(route('inventory.items.update', $item), [
+            'name' => $item->name,
+            'category' => $item->category,
+            'unit' => $item->unit,
+            'min_stock' => $item->min_stock,
+            'remove_photo' => 1,
+        ]);
+        $removeResp->assertSessionHas('success');
+        $item->refresh();
+        $this->assertNull($item->photo);
+
+        // Cleanup
+        $item->movements()->delete();
+        $item->delete();
+    }
 }
 
 
