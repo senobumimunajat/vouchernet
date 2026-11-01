@@ -2170,6 +2170,221 @@ class VoucherNetTest extends TestCase
         $deposit1->delete();
         $deposit2->delete();
     }
+
+    public function test_super_admin_can_delete_admin_and_tenant_users(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        // 1. Buat admin baru untuk diuji hapus oleh Super Admin
+        $targetAdmin = User::create([
+            'name' => 'Admin To Delete',
+            'username' => 'adm_delete_' . uniqid(),
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'phone' => '081299990001',
+        ]);
+
+        // Buat data pengeluaran oleh targetAdmin untuk memastikan data keuangan dialihkan ke Super Admin
+        $expense = Expense::create([
+            'expense_number' => 'EXP-DEL-ADMIN-' . uniqid(),
+            'title' => 'Kertas Thermal POS',
+            'category' => 'Operasional & Konsumsi',
+            'amount' => 50000,
+            'expense_date' => date('Y-m-d'),
+            'created_by' => $targetAdmin->id,
+        ]);
+
+        $respDeleteAdmin = $this->actingAs($superAdmin)->delete(route('users.destroy', $targetAdmin));
+        $respDeleteAdmin->assertSessionHas('success');
+        $this->assertDatabaseMissing('users', ['id' => $targetAdmin->id]);
+
+        // Catatan pengeluaran tidak hilang, tapi dialihkan ke Super Admin
+        $expense->refresh();
+        $this->assertEquals($superAdmin->id, $expense->created_by);
+
+        // 2. Buat mitra (tenant) baru untuk diuji hapus oleh Super Admin
+        $targetTenant = User::create([
+            'name' => 'Warung To Delete',
+            'username' => 'warung_delete_' . uniqid(),
+            'password' => bcrypt('password'),
+            'role' => 'tenant',
+            'shop_name' => 'Toko Dihapus',
+            'phone' => '081299990002',
+        ]);
+
+        $respDeleteTenant = $this->actingAs($superAdmin)->delete(route('users.destroy', $targetTenant));
+        $respDeleteTenant->assertSessionHas('success');
+        $this->assertDatabaseMissing('users', ['id' => $targetTenant->id]);
+
+        $expense->delete();
+    }
+
+    public function test_admin_can_delete_tenant_but_forbidden_from_deleting_admin_or_superadmin(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        $anotherAdmin = User::create([
+            'name' => 'Another Admin',
+            'username' => 'another_admin_' . uniqid(),
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'phone' => '081299990003',
+        ]);
+
+        $targetTenant = User::create([
+            'name' => 'Mitra Warung Budi',
+            'username' => 'warung_budi_' . uniqid(),
+            'password' => bcrypt('password'),
+            'role' => 'tenant',
+            'shop_name' => 'Warung Budi',
+            'phone' => '081299990004',
+        ]);
+
+        // 1. Admin BISA menghapus akun mitra (tenant)
+        $respTenant = $this->actingAs($admin)->delete(route('users.destroy', $targetTenant));
+        $respTenant->assertSessionHas('success');
+        $this->assertDatabaseMissing('users', ['id' => $targetTenant->id]);
+
+        // 2. Admin DILARANG (403) menghapus sesama admin
+        $respAdmin = $this->actingAs($admin)->delete(route('users.destroy', $anotherAdmin));
+        $respAdmin->assertStatus(403);
+        $this->assertDatabaseHas('users', ['id' => $anotherAdmin->id]);
+
+        // 3. Admin DILARANG (403) menghapus super admin
+        $respSuperAdmin = $this->actingAs($admin)->delete(route('users.destroy', $superAdmin));
+        $respSuperAdmin->assertStatus(403);
+        $this->assertDatabaseHas('users', ['id' => $superAdmin->id]);
+
+        $anotherAdmin->delete();
+    }
+
+    public function test_user_cannot_delete_themselves_or_superadmin(): void
+    {
+        $superAdmin = User::where('role', 'super_admin')->first();
+
+        // 1. Super admin mencoba menghapus dirinya sendiri -> gagal / ditolak
+        $respSelf = $this->actingAs($superAdmin)->delete(route('users.destroy', $superAdmin));
+        $respSelf->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $superAdmin->id]);
+
+        // 2. Super admin kedua dibuat untuk menguji larangan menghapus super admin
+        $superAdmin2 = User::create([
+            'name' => 'Super Admin 2',
+            'username' => 'super2_' . uniqid(),
+            'password' => bcrypt('password'),
+            'role' => 'super_admin',
+            'phone' => '081299990005',
+        ]);
+
+        $respOtherSuper = $this->actingAs($superAdmin)->delete(route('users.destroy', $superAdmin2));
+        $respOtherSuper->assertStatus(403);
+        $this->assertDatabaseHas('users', ['id' => $superAdmin2->id]);
+
+        $superAdmin2->delete();
+    }
+
+    public function test_tenant_cannot_be_deleted_if_having_unpaid_tempo_orders_or_deposits(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $package = VoucherPackage::first();
+
+        $tenantWithDebt = User::create([
+            'name' => 'Mitra Punya Hutang',
+            'username' => 'warung_tempo_' . uniqid(),
+            'password' => bcrypt('password'),
+            'role' => 'tenant',
+            'shop_name' => 'Warung Hutang',
+            'phone' => '081299990006',
+        ]);
+
+        // 1. Memiliki pesanan voucher belum lunas (menunggu_pembayaran)
+        $order = Order::create([
+            'order_number' => 'ORD-TEMPO-TEST',
+            'tenant_id' => $tenantWithDebt->id,
+            'package_id' => $package->id,
+            'quantity' => 10,
+            'printed_price_each' => 5000,
+            'owner_price_each' => 4500,
+            'total_printed_amount' => 50000,
+            'total_owner_amount' => 45000,
+            'total_reseller_profit' => 5000,
+            'payment_type' => 'tempo',
+            'status' => 'menunggu_pembayaran',
+        ]);
+
+        $respDelete1 = $this->actingAs($admin)->delete(route('users.destroy', $tenantWithDebt));
+        $respDelete1->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $tenantWithDebt->id]);
+
+        // Lunaskan order
+        $order->update(['status' => 'lunas']);
+
+        // 2. Memiliki deposit saldo tempo aktif
+        $deposit = MerchantDeposit::create([
+            'deposit_number' => 'DEP-TEMPO-TEST',
+            'tenant_id' => $tenantWithDebt->id,
+            'amount' => 200000,
+            'payment_type' => 'tempo',
+            'payment_method' => 'cash',
+            'status' => 'tempo',
+            'deposit_date' => date('Y-m-d'),
+            'created_by' => $tenantWithDebt->id,
+            'confirmed_by' => $admin->id,
+            'confirmed_at' => now(),
+        ]);
+
+        $respDelete2 = $this->actingAs($admin)->delete(route('users.destroy', $tenantWithDebt));
+        $respDelete2->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $tenantWithDebt->id]);
+
+        // Lunaskan deposit
+        $deposit->update(['status' => 'lunas', 'actual_paid_amount' => 200000]);
+
+        // Berdasarkan OPSI 1: Mitra yang memiliki riwayat transaksi lunas TETAP TIDAK DAPAT dihapus permanen
+        // untuk mengamankan keutuhan buku kas & omset masa lalu
+        $respDeleteHistory = $this->actingAs($admin)->delete(route('users.destroy', $tenantWithDebt));
+        $respDeleteHistory->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $tenantWithDebt->id]);
+
+        // Namun akun mitra dapat dinonaktifkan dengan aman
+        $respToggle = $this->actingAs($admin)->patch(route('users.toggle_status', $tenantWithDebt));
+        $respToggle->assertSessionHas('success');
+        $tenantWithDebt->refresh();
+        $this->assertFalse($tenantWithDebt->is_active);
+
+        $order->delete();
+        $deposit->delete();
+        $tenantWithDebt->delete();
+    }
+
+    public function test_new_tenant_without_transaction_history_can_be_deleted_permanently(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+
+        // Mitra baru mendaftar atau salah input nama/nomor HP (belum ada transaksi sama sekali)
+        $newTenant = User::create([
+            'name' => 'Mitra Baru Salah Ketik',
+            'username' => 'warung_salah_' . uniqid(),
+            'password' => bcrypt('password'),
+            'role' => 'tenant',
+            'shop_name' => 'Warung Belum Belanja',
+            'phone' => '081299990007',
+        ]);
+
+        $respDelete = $this->actingAs($admin)->delete(route('users.destroy', $newTenant));
+        $respDelete->assertSessionHas('success');
+        $this->assertDatabaseMissing('users', ['id' => $newTenant->id]);
+    }
+
+    public function test_tenant_is_forbidden_from_deleting_users(): void
+    {
+        $tenant = User::where('role', 'tenant')->first();
+        $anotherTenant = User::where('role', 'tenant')->where('id', '!=', $tenant->id)->first();
+
+        $resp = $this->actingAs($tenant)->delete(route('users.destroy', $anotherTenant));
+        $resp->assertStatus(403);
+    }
 }
 
 
