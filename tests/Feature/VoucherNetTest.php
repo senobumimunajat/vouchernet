@@ -146,7 +146,10 @@ class VoucherNetTest extends TestCase
     public function test_admin_can_view_offline_order_page_and_packages(): void
     {
         $admin = User::where('role', 'admin')->first();
-        $this->actingAs($admin)->get('/admin/orders/offline')->assertStatus(200);
+        $response = $this->actingAs($admin)->get('/admin/orders/offline')->assertStatus(200);
+        $response->assertSee('tenantSearchInput');
+        $response->assertSee('tenantSelectedCard');
+        $response->assertSee('tenantDropdownList');
         $this->actingAs($admin)->get('/packages')->assertStatus(200);
     }
 

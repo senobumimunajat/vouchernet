@@ -43,21 +43,97 @@
 
             <!-- 2A. Dropdown Warung (Muncul jika Tipe Pembeli = Warung) -->
             <div id="tenantSelectContainer" class="space-y-2">
-                <label for="tenant_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Pilih Mitra Warung / Reseller</label>
-                <div class="relative">
-                    <select name="tenant_id" id="tenant_id" class="w-full px-4 py-3 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all appearance-none">
-                        <option value="">-- Pilih Warung Pemesan --</option>
+                <div class="flex items-center justify-between">
+                    <label for="tenantSearchInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Pilih Mitra Warung / Reseller <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400 font-medium">Total: {{ count($tenants) }} Mitra Terdaftar</span>
+                </div>
+
+                <!-- Hidden Input untuk form submission -->
+                <input type="hidden" name="tenant_id" id="tenant_id" value="{{ old('tenant_id') }}">
+
+                <div id="tenantComboboxWrapper" class="relative">
+                    <!-- 1. Search Input Box (Aktif saat mencari) -->
+                    <div id="tenantSearchBox" class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text" id="tenantSearchInput" autocomplete="off"
+                            placeholder="🔍 Cari nama warung, nama pemilik, no HP, atau username..."
+                            onfocus="openTenantDropdown()"
+                            oninput="filterTenants()"
+                            class="w-full pl-10 pr-10 py-3 text-xs bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm">
+                        <button type="button" id="tenantClearSearchBtn" onclick="clearSearchText()"
+                            class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- 2. Selected Tenant Card (Muncul saat mitra dipilih) -->
+                    <div id="tenantSelectedCard" class="hidden p-3.5 sm:p-4 bg-gradient-to-r from-blue-50/90 to-indigo-50/70 border-2 border-blue-300/80 rounded-2xl flex items-center justify-between gap-3 shadow-sm">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-base shrink-0 shadow-sm shadow-blue-500/20">
+                                🏪
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 id="selectedTenantShopName" class="text-xs sm:text-sm font-extrabold text-blue-950 truncate">Nama Warung</h4>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">Mitra Terpilih</span>
+                                </div>
+                                <p id="selectedTenantDetails" class="text-[11px] text-slate-600 mt-0.5 truncate">Pemilik: - • 📞 -</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearSelectedTenant()"
+                            class="shrink-0 px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200/90 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-95">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span>Ganti Mitra</span>
+                        </button>
+                    </div>
+
+                    <!-- 3. Dropdown Floating List -->
+                    <div id="tenantDropdownList" class="hidden absolute left-0 right-0 mt-1.5 max-h-64 overflow-y-auto bg-white border border-slate-200/90 rounded-2xl shadow-xl z-50 divide-y divide-slate-100 overscroll-contain">
                         @foreach($tenants as $t)
-                        <option value="{{ $t->id }}" {{ old('tenant_id') == $t->id ? 'selected' : '' }}>
-                            {{ $t->shop_name ?: $t->name }} (Pemilik: {{ $t->name }} - {{ $t->phone }})
-                        </option>
+                        <div class="tenant-option-item p-3 hover:bg-blue-50/80 cursor-pointer transition-colors flex items-center justify-between gap-3 text-left group"
+                            tabindex="0"
+                            data-id="{{ $t->id }}"
+                            data-search="{{ strtolower(($t->shop_name ?? '') . ' ' . ($t->name ?? '') . ' ' . ($t->phone ?? '') . ' ' . ($t->username ?? '') . ' ' . ($t->address ?? '')) }}"
+                            onclick="selectTenant('{{ $t->id }}')">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-xs font-bold text-slate-900 group-hover:text-blue-900 truncate">{{ $t->shop_name ?: $t->name }}</span>
+                                    @if($t->username)
+                                    <span class="text-[10px] text-slate-400 font-mono">@<span>{{ $t->username }}</span></span>
+                                    @endif
+                                </div>
+                                <div class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2.5 flex-wrap">
+                                    <span>Pemilik: <strong class="text-slate-700">{{ $t->name }}</strong></span>
+                                    @if($t->phone && $t->phone !== '-')
+                                    <span class="text-slate-400">•</span>
+                                    <span>📞 <span class="font-mono text-slate-600">{{ $t->phone }}</span></span>
+                                    @endif
+                                </div>
+                            </div>
+                            <span class="text-[11px] font-bold text-blue-600 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white px-2.5 py-1 rounded-lg shrink-0 transition-colors">
+                                Pilih &rarr;
+                            </span>
+                        </div>
                         @endforeach
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        <div id="tenantEmptyState" class="hidden p-6 text-center text-xs text-slate-400">
+                            <svg class="w-8 h-8 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <span>Mitra tidak ditemukan dengan kata kunci tersebut.</span>
+                        </div>
                     </div>
                 </div>
-                <div class="text-[11px] text-slate-400 flex items-center gap-1">
+
+                @error('tenant_id')
+                <p class="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>{{ $message }}</span>
+                </p>
+                @enderror
+
+                <div class="text-[11px] text-slate-400 flex items-center gap-1 pt-0.5">
                     <span>Belum terdaftar?</span>
                     <a href="{{ route('users.index') }}" class="text-blue-600 hover:text-blue-700 font-semibold underline">Tambah warung baru di menu Pengguna</a>
                 </div>
@@ -332,7 +408,6 @@
         const tabDirect = document.getElementById('tabDirect');
         const tenantContainer = document.getElementById('tenantSelectContainer');
         const directContainer = document.getElementById('directCustomerContainer');
-        const tenantSelect = document.getElementById('tenant_id');
         const paymentWarungContainer = document.getElementById('paymentStatusWarungContainer');
         const paymentSection = document.getElementById('paymentMethodSection');
         const noticeBox = document.getElementById('statusNoticeBox');
@@ -350,7 +425,6 @@
             tabWarung.className = 'py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all text-slate-600 hover:text-slate-900';
 
             tenantContainer.classList.add('hidden');
-            tenantSelect.removeAttribute('required');
             directContainer.classList.remove('hidden');
 
             paymentWarungContainer.classList.add('hidden');
@@ -366,7 +440,6 @@
             tabDirect.className = 'py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all text-slate-600 hover:text-slate-900';
 
             tenantContainer.classList.remove('hidden');
-            tenantSelect.setAttribute('required', 'required');
             directContainer.classList.add('hidden');
 
             paymentWarungContainer.classList.remove('hidden');
@@ -490,8 +563,175 @@
         }
     }
 
+    // ==========================================
+    // TENANT SEARCHABLE COMBOBOX LOGIC
+    // ==========================================
+    @php
+        $tenantListJson = $tenants->map(function($t) {
+            return [
+                'id' => (string) $t->id,
+                'shop_name' => $t->shop_name ?: $t->name,
+                'owner_name' => $t->name,
+                'phone' => $t->phone ?: '-',
+                'username' => $t->username ?: '',
+                'address' => $t->address ?: '',
+            ];
+        })->values();
+    @endphp
+    const tenantData = {!! json_encode($tenantListJson) !!};
+
+    let tenantHighlightedIndex = -1;
+
+    function filterTenants() {
+        const query = (document.getElementById('tenantSearchInput').value || '').toLowerCase().trim();
+        const items = document.querySelectorAll('.tenant-option-item');
+        const clearBtn = document.getElementById('tenantClearSearchBtn');
+        const emptyState = document.getElementById('tenantEmptyState');
+        let visibleCount = 0;
+
+        if (query.length > 0) {
+            clearBtn.classList.remove('hidden');
+        } else {
+            clearBtn.classList.add('hidden');
+        }
+
+        items.forEach(item => {
+            const searchText = item.getAttribute('data-search') || '';
+            if (query === '' || searchText.includes(query)) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+            item.classList.remove('bg-blue-100');
+        });
+
+        tenantHighlightedIndex = -1;
+
+        if (visibleCount === 0) {
+            emptyState.classList.remove('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+        }
+    }
+
+    function clearSearchText() {
+        const input = document.getElementById('tenantSearchInput');
+        input.value = '';
+        filterTenants();
+        input.focus();
+    }
+
+    function openTenantDropdown() {
+        document.getElementById('tenantDropdownList').classList.remove('hidden');
+    }
+
+    function closeTenantDropdown() {
+        document.getElementById('tenantDropdownList').classList.add('hidden');
+        tenantHighlightedIndex = -1;
+    }
+
+    function selectTenant(id) {
+        const t = tenantData.find(item => item.id == id);
+        if (!t) return;
+
+        document.getElementById('tenant_id').value = t.id;
+        document.getElementById('selectedTenantShopName').innerText = t.shop_name;
+        
+        let details = 'Pemilik: ' + t.owner_name;
+        if (t.phone && t.phone !== '-') {
+            details += ' • 📞 ' + t.phone;
+        }
+        if (t.username) {
+            details += ' • @' + t.username;
+        }
+        document.getElementById('selectedTenantDetails').innerText = details;
+
+        document.getElementById('tenantSearchBox').classList.add('hidden');
+        document.getElementById('tenantDropdownList').classList.add('hidden');
+        document.getElementById('tenantSelectedCard').classList.remove('hidden');
+    }
+
+    function clearSelectedTenant() {
+        document.getElementById('tenant_id').value = '';
+        document.getElementById('tenantSelectedCard').classList.add('hidden');
+        document.getElementById('tenantSearchBox').classList.remove('hidden');
+        
+        const input = document.getElementById('tenantSearchInput');
+        input.value = '';
+        filterTenants();
+        input.focus();
+        openTenantDropdown();
+    }
+
+    // Keyboard navigation pada search input mitra
+    const searchInputEl = document.getElementById('tenantSearchInput');
+    if (searchInputEl) {
+        searchInputEl.addEventListener('keydown', function(e) {
+            const list = document.getElementById('tenantDropdownList');
+            if (list.classList.contains('hidden')) {
+                if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                    openTenantDropdown();
+                    e.preventDefault();
+                    return;
+                }
+            }
+
+            const visibleItems = Array.from(document.querySelectorAll('.tenant-option-item:not(.hidden)'));
+            if (visibleItems.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                tenantHighlightedIndex = (tenantHighlightedIndex + 1) % visibleItems.length;
+                updateTenantHighlight(visibleItems);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                tenantHighlightedIndex = (tenantHighlightedIndex - 1 + visibleItems.length) % visibleItems.length;
+                updateTenantHighlight(visibleItems);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (tenantHighlightedIndex >= 0 && tenantHighlightedIndex < visibleItems.length) {
+                    visibleItems[tenantHighlightedIndex].click();
+                } else if (visibleItems.length === 1) {
+                    visibleItems[0].click();
+                }
+            } else if (e.key === 'Escape') {
+                closeTenantDropdown();
+            }
+        });
+    }
+
+    function updateTenantHighlight(visibleItems) {
+        visibleItems.forEach((item, idx) => {
+            if (idx === tenantHighlightedIndex) {
+                item.classList.add('bg-blue-100');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('bg-blue-100');
+            }
+        });
+    }
+
+    // Tutup dropdown saat user klik di luar combobox
+    document.addEventListener('click', function(e) {
+        const combobox = document.getElementById('tenantComboboxWrapper');
+        if (combobox && !combobox.contains(e.target)) {
+            closeTenantDropdown();
+        }
+    });
+
     // Client-side form submission validation
     document.querySelector('form').addEventListener('submit', function(e) {
+        if (currentBuyerType === 'warung') {
+            const tenantId = document.getElementById('tenant_id').value;
+            if (!tenantId) {
+                e.preventDefault();
+                alert('Mohon pilih Mitra Warung / Reseller pemesan terlebih dahulu.');
+                clearSelectedTenant();
+                return false;
+            }
+        }
+
         const inputs = document.querySelectorAll('.item-qty-input');
         let total = 0;
         inputs.forEach(inp => total += (parseInt(inp.value) || 0));
@@ -507,6 +747,11 @@
         setBuyerType('direct');
     @else
         setBuyerType('warung');
+    @endif
+
+    // Restore selected tenant if previous validation failed
+    @if(old('tenant_id'))
+        selectTenant("{{ old('tenant_id') }}");
     @endif
 </script>
 @endsection
