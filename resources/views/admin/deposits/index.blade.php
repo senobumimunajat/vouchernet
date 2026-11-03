@@ -350,15 +350,97 @@
         <form action="{{ route('admin.deposits.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
 
-            <!-- Pilih Mitra -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Mitra Warung</label>
-                <select name="tenant_id" required class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">-- Pilih Mitra Warung --</option>
-                    @foreach($tenants as $t)
-                    <option value="{{ $t->id }}">{{ $t->shop_name ?: $t->name }} ({{ $t->phone }})</option>
-                    @endforeach
-                </select>
+            <!-- Pilih Mitra (Searchable Combobox) -->
+            <div id="depositTenantSelectContainer" class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label for="depositTenantSearchInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Pilih Mitra Warung <span class="text-rose-500">*</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400 font-medium">Total: {{ count($tenants) }} Mitra</span>
+                </div>
+
+                <!-- Hidden Input untuk form submission -->
+                <input type="hidden" name="tenant_id" id="deposit_tenant_id" value="{{ old('tenant_id') }}">
+
+                <div id="depositTenantComboboxWrapper" class="relative">
+                    <!-- 1. Search Input Box (Aktif saat mencari) -->
+                    <div id="depositTenantSearchBox" class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text" id="depositTenantSearchInput" autocomplete="off"
+                            placeholder="🔍 Cari nama warung, pemilik, no HP, atau username..."
+                            onfocus="openDepositTenantDropdown()"
+                            oninput="filterDepositTenants()"
+                            class="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm">
+                        <button type="button" id="depositTenantClearSearchBtn" onclick="clearDepositSearchText()"
+                            class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- 2. Selected Tenant Card (Muncul saat mitra dipilih) -->
+                    <div id="depositTenantSelectedCard" class="hidden p-3 bg-gradient-to-r from-blue-50/90 to-indigo-50/70 border-2 border-blue-300/80 rounded-xl flex items-center justify-between gap-3 shadow-sm">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm shadow-blue-500/20">
+                                🏪
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <h4 id="depositSelectedTenantShopName" class="text-xs font-extrabold text-blue-950 truncate">Nama Warung</h4>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">Terpilih</span>
+                                </div>
+                                <p id="depositSelectedTenantDetails" class="text-[10px] text-slate-600 mt-0.5 truncate">Pemilik: - • 📞 -</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearDepositSelectedTenant()"
+                            class="shrink-0 px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200/90 text-[11px] font-bold transition-all shadow-sm flex items-center gap-1 active:scale-95">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <span>Ganti</span>
+                        </button>
+                    </div>
+
+                    <!-- 3. Dropdown Floating List -->
+                    <div id="depositTenantDropdownList" class="hidden absolute left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-slate-200/90 rounded-xl shadow-xl z-50 divide-y divide-slate-100 overscroll-contain">
+                        @foreach($tenants as $t)
+                        <div class="deposit-tenant-option-item p-2.5 hover:bg-blue-50/80 cursor-pointer transition-colors flex items-center justify-between gap-2.5 text-left group"
+                            tabindex="0"
+                            data-id="{{ $t->id }}"
+                            data-search="{{ strtolower(($t->shop_name ?? '') . ' ' . ($t->name ?? '') . ' ' . ($t->phone ?? '') . ' ' . ($t->username ?? '') . ' ' . ($t->address ?? '')) }}"
+                            onclick="selectDepositTenant('{{ $t->id }}')">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-xs font-bold text-slate-900 group-hover:text-blue-900 truncate">{{ $t->shop_name ?: $t->name }}</span>
+                                    @if($t->username)
+                                    <span class="text-[10px] text-slate-400 font-mono">@<span>{{ $t->username }}</span></span>
+                                    @endif
+                                </div>
+                                <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                                    <span>Pemilik: <strong class="text-slate-700">{{ $t->name }}</strong></span>
+                                    @if($t->phone && $t->phone !== '-')
+                                    <span class="text-slate-300">•</span>
+                                    <span>📞 <span class="font-mono text-slate-600">{{ $t->phone }}</span></span>
+                                    @endif
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold text-blue-600 bg-blue-50 group-hover:bg-blue-600 group-hover:text-white px-2 py-0.5 rounded-md shrink-0 transition-colors">
+                                Pilih &rarr;
+                            </span>
+                        </div>
+                        @endforeach
+                        <div id="depositTenantEmptyState" class="hidden p-4 text-center text-xs text-slate-400">
+                            <svg class="w-6 h-6 mx-auto text-slate-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            <span>Mitra tidak ditemukan.</span>
+                        </div>
+                    </div>
+                </div>
+
+                @error('tenant_id')
+                <p class="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>{{ $message }}</span>
+                </p>
+                @enderror
             </div>
 
             <!-- Nominal Saldo -->
@@ -643,5 +725,180 @@ function calculateSettleProfit() {
     document.getElementById('calcOwnerCash').innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(paid);
     document.getElementById('calcMerchantProfit').innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(profit);
 }
+
+// ==========================================
+// DEPOSIT TENANT SEARCHABLE COMBOBOX LOGIC
+// ==========================================
+@php
+    $depositTenantListJson = $tenants->map(function($t) {
+        return [
+            'id' => (string) $t->id,
+            'shop_name' => $t->shop_name ?: $t->name,
+            'owner_name' => $t->name,
+            'phone' => $t->phone ?: '-',
+            'username' => $t->username ?: '',
+            'address' => $t->address ?: '',
+        ];
+    })->values();
+@endphp
+const depositTenantData = {!! json_encode($depositTenantListJson) !!};
+let depositTenantHighlightedIndex = -1;
+
+function filterDepositTenants() {
+    const query = (document.getElementById('depositTenantSearchInput').value || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.deposit-tenant-option-item');
+    const clearBtn = document.getElementById('depositTenantClearSearchBtn');
+    const emptyState = document.getElementById('depositTenantEmptyState');
+    let visibleCount = 0;
+
+    if (query.length > 0) {
+        clearBtn.classList.remove('hidden');
+    } else {
+        clearBtn.classList.add('hidden');
+    }
+
+    items.forEach(item => {
+        const searchText = item.getAttribute('data-search') || '';
+        if (query === '' || searchText.includes(query)) {
+            item.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            item.classList.add('hidden');
+        }
+        item.classList.remove('bg-blue-100');
+    });
+
+    depositTenantHighlightedIndex = -1;
+
+    if (visibleCount === 0) {
+        emptyState.classList.remove('hidden');
+    } else {
+        emptyState.classList.add('hidden');
+    }
+}
+
+function clearDepositSearchText() {
+    const input = document.getElementById('depositTenantSearchInput');
+    input.value = '';
+    filterDepositTenants();
+    input.focus();
+}
+
+function openDepositTenantDropdown() {
+    document.getElementById('depositTenantDropdownList').classList.remove('hidden');
+}
+
+function closeDepositTenantDropdown() {
+    document.getElementById('depositTenantDropdownList').classList.add('hidden');
+    depositTenantHighlightedIndex = -1;
+}
+
+function selectDepositTenant(id) {
+    const t = depositTenantData.find(item => item.id == id);
+    if (!t) return;
+
+    document.getElementById('deposit_tenant_id').value = t.id;
+    document.getElementById('depositSelectedTenantShopName').innerText = t.shop_name;
+    
+    let details = 'Pemilik: ' + t.owner_name;
+    if (t.phone && t.phone !== '-') {
+        details += ' • 📞 ' + t.phone;
+    }
+    if (t.username) {
+        details += ' • @' + t.username;
+    }
+    document.getElementById('depositSelectedTenantDetails').innerText = details;
+
+    document.getElementById('depositTenantSearchBox').classList.add('hidden');
+    document.getElementById('depositTenantDropdownList').classList.add('hidden');
+    document.getElementById('depositTenantSelectedCard').classList.remove('hidden');
+}
+
+function clearDepositSelectedTenant() {
+    document.getElementById('deposit_tenant_id').value = '';
+    document.getElementById('depositTenantSelectedCard').classList.add('hidden');
+    document.getElementById('depositTenantSearchBox').classList.remove('hidden');
+    
+    const input = document.getElementById('depositTenantSearchInput');
+    input.value = '';
+    filterDepositTenants();
+    input.focus();
+    openDepositTenantDropdown();
+}
+
+// Keyboard navigation
+const depositSearchInputEl = document.getElementById('depositTenantSearchInput');
+if (depositSearchInputEl) {
+    depositSearchInputEl.addEventListener('keydown', function(e) {
+        const list = document.getElementById('depositTenantDropdownList');
+        if (list.classList.contains('hidden')) {
+            if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                openDepositTenantDropdown();
+                e.preventDefault();
+                return;
+            }
+        }
+
+        const visibleItems = Array.from(document.querySelectorAll('.deposit-tenant-option-item:not(.hidden)'));
+        if (visibleItems.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            depositTenantHighlightedIndex = (depositTenantHighlightedIndex + 1) % visibleItems.length;
+            updateDepositTenantHighlight(visibleItems);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            depositTenantHighlightedIndex = (depositTenantHighlightedIndex - 1 + visibleItems.length) % visibleItems.length;
+            updateDepositTenantHighlight(visibleItems);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (depositTenantHighlightedIndex >= 0 && depositTenantHighlightedIndex < visibleItems.length) {
+                visibleItems[depositTenantHighlightedIndex].click();
+            } else if (visibleItems.length === 1) {
+                visibleItems[0].click();
+            }
+        } else if (e.key === 'Escape') {
+            closeDepositTenantDropdown();
+        }
+    });
+}
+
+function updateDepositTenantHighlight(visibleItems) {
+    visibleItems.forEach((item, idx) => {
+        if (idx === depositTenantHighlightedIndex) {
+            item.classList.add('bg-blue-100');
+            item.scrollIntoView({ block: 'nearest' });
+        } else {
+            item.classList.remove('bg-blue-100');
+        }
+    });
+}
+
+// Tutup dropdown saat user klik di luar combobox
+document.addEventListener('click', function(e) {
+    const combobox = document.getElementById('depositTenantComboboxWrapper');
+    if (combobox && !combobox.contains(e.target)) {
+        closeDepositTenantDropdown();
+    }
+});
+
+// Validasi form deposit modal
+const createDepositForm = document.querySelector('#modalCreateDeposit form');
+if (createDepositForm) {
+    createDepositForm.addEventListener('submit', function(e) {
+        const tenantId = document.getElementById('deposit_tenant_id').value;
+        if (!tenantId) {
+            e.preventDefault();
+            alert('Mohon pilih Mitra Warung terlebih dahulu.');
+            clearDepositSelectedTenant();
+            return false;
+        }
+    });
+}
+
+// Restore selected tenant if previous validation failed
+@if(old('tenant_id'))
+    selectDepositTenant("{{ old('tenant_id') }}");
+@endif
 </script>
 @endsection

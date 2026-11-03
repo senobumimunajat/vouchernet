@@ -1887,6 +1887,9 @@ class VoucherNetTest extends TestCase
         $viewResp = $this->actingAs($admin)->get(route('admin.deposits.index'));
         $viewResp->assertStatus(200);
         $viewResp->assertSee($deposit->deposit_number);
+        $viewResp->assertSee('depositTenantSearchInput');
+        $viewResp->assertSee('depositTenantSelectedCard');
+        $viewResp->assertSee('depositTenantDropdownList');
 
         // 2. Admin confirms deposit topup
         $confirmResp = $this->actingAs($admin)->post(route('admin.deposits.confirm', $deposit));
